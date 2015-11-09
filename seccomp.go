@@ -3,7 +3,7 @@
 // Public API specification for libseccomp Go bindings
 // Contains public API for the bindings
 
-// Package seccomp rovides bindings for libseccomp, a library wrapping the Linux
+// Package seccomp provides bindings for libseccomp, a library wrapping the Linux
 // seccomp syscall. Seccomp enables an application to restrict system call use
 // for itself and its children.
 package seccomp

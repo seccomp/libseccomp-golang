@@ -9,6 +9,7 @@
 package seccomp
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -26,6 +27,10 @@ import (
 import "C"
 
 // Exported types
+
+// ErrUnsupportedVersion is returned when the libseccomp version on the system is to low for use
+// with the go bindings.
+var ErrUnsupportedVersion = errors.New("Libseccomp version too low: minimum supported is 2.1.0")
 
 // ScmpArch represents a CPU architecture. Seccomp can restrict syscalls on a
 // per-architecture basis.
@@ -405,6 +410,9 @@ type ScmpFilter struct {
 // Returns a reference to a valid filter context, or nil and an error if the
 // filter context could not be created or an invalid default action was given.
 func NewFilter(defaultAction ScmpAction) (*ScmpFilter, error) {
+	if !checkVersionAbove(2, 1, 0) {
+		return nil, ErrUnsupportedVersion
+	}
 	if err := sanitizeAction(defaultAction); err != nil {
 		return nil, err
 	}

@@ -20,7 +20,7 @@ import (
 
 // C wrapping code
 
-// #cgo LDFLAGS: -lseccomp
+// #cgo pkg-config: libseccomp
 // #include <stdlib.h>
 // #include <seccomp.h>
 import "C"

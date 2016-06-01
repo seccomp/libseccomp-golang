@@ -7,7 +7,6 @@ package seccomp
 
 import (
 	"fmt"
-	"os"
 	"syscall"
 )
 
@@ -190,14 +189,6 @@ func checkVersionAbove(major, minor, micro int) bool {
 	return (verMajor > major) ||
 		(verMajor == major && verMinor > minor) ||
 		(verMajor == major && verMinor == minor && verMicro >= micro)
-}
-
-// Init function: Verify library version is appropriate
-func init() {
-	if !checkVersionAbove(2, 1, 0) {
-		fmt.Fprintf(os.Stderr, "Libseccomp version too low: minimum supported is 2.1.0, detected %d.%d.%d", C.C_VERSION_MAJOR, C.C_VERSION_MINOR, C.C_VERSION_MICRO)
-		os.Exit(-1)
-	}
 }
 
 // Filter helpers

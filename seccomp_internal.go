@@ -152,7 +152,6 @@ import "C"
 type scmpFilterAttr uint32
 
 // Nonexported constants
-
 const (
 	filterAttrActDefault scmpFilterAttr = iota
 	filterAttrActBadArch scmpFilterAttr = iota
@@ -174,6 +173,7 @@ const (
 	compareOpEnd   ScmpCompareOp = CompareMaskedEqual
 )
 
+// Nonexported variables
 var (
 	// Error thrown on bad filter context
 	errBadFilter = fmt.Errorf("filter is invalid or uninitialized")

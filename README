@@ -24,3 +24,29 @@ please note that a Google account is not required to subscribe to the mailing
 list.
 
 	-> https://groups.google.com/d/forum/libseccomp
+
+Documentation is also available at:
+
+	-> https://godoc.org/github.com/seccomp/libseccomp-golang
+
+
+* Installing the package
+
+Using go get:
+
+	$ go get github.com/seccomp/libseccomp-golang
+
+* Testing the Library
+
+Number of test and lint related recipes are provided in the Makefile, if
+you want to run the standard regression tests, you can excute the following:
+
+	$ make check
+
+golint, available from
+
+	-> https://github.com/golang/lint
+
+is required for the lint recipie
+
+	$ make lint

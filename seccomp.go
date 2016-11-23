@@ -302,6 +302,14 @@ func GetLibraryVersion() (major, minor, micro int) {
 	return verMajor, verMinor, verMicro
 }
 
+// GetRuntimeLibraryVersion returns the runtime version of the library the
+// bindings are using.
+// The version is formatted as follows: Major.Minor.Micro
+func GetRuntimeLibraryVersion() (major, minor, micro int) {
+	ver := C.seccomp_version()
+	return int(ver.major), int(ver.minor), int(ver.micro)
+}
+
 // Syscall functions
 
 // GetName retrieves the name of a syscall from its number.

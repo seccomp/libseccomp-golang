@@ -194,8 +194,8 @@ func checkVersionAbove(major, minor, micro int) bool {
 
 // Init function: Verify library version is appropriate
 func init() {
-	if !checkVersionAbove(2, 1, 0) {
-		fmt.Fprintf(os.Stderr, "Libseccomp version too low: minimum supported is 2.1.0, detected %d.%d.%d", C.C_VERSION_MAJOR, C.C_VERSION_MINOR, C.C_VERSION_MICRO)
+	if !checkVersionAbove(2, 2, 0) {
+		fmt.Fprintf(os.Stderr, "Libseccomp version too low: minimum supported is 2.2.0, detected %d.%d.%d", C.C_VERSION_MAJOR, C.C_VERSION_MINOR, C.C_VERSION_MICRO)
 		os.Exit(-1)
 	}
 }
@@ -216,10 +216,6 @@ func (f *ScmpFilter) getFilterAttr(attr scmpFilterAttr) (C.uint32_t, error) {
 		return 0x0, errBadFilter
 	}
 
-	if !checkVersionAbove(2, 2, 0) && attr == filterAttrTsync {
-		return 0x0, fmt.Errorf("the thread synchronization attribute is not supported in this version of the library")
-	}
-
 	var attribute C.uint32_t
 
 	retCode := C.seccomp_attr_get(f.filterCtx, attr.toNative(), &attribute)
@@ -237,10 +233,6 @@ func (f *ScmpFilter) setFilterAttr(attr scmpFilterAttr, value C.uint32_t) error 
 
 	if !f.valid {
 		return errBadFilter
-	}
-
-	if !checkVersionAbove(2, 2, 0) && attr == filterAttrTsync {
-		return fmt.Errorf("the thread synchronization attribute is not supported in this version of the library")
 	}
 
 	retCode := C.seccomp_attr_set(f.filterCtx, attr.toNative(), value)

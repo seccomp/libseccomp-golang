@@ -429,7 +429,8 @@ type ScmpFilter struct {
 	lock      sync.Mutex
 }
 
-// NewFilter creates and returns a new filter context.
+// NewFilter creates and returns a new filter context, with the Thread
+// Synchronization attribute set.
 // Accepts a default action to be taken for syscalls which match no rules in
 // the filter.
 // Returns a reference to a valid filter context, or nil and an error if the
@@ -448,6 +449,11 @@ func NewFilter(defaultAction ScmpAction) (*ScmpFilter, error) {
 	filter.filterCtx = fPtr
 	filter.valid = true
 	runtime.SetFinalizer(filter, filterFinalizer)
+
+	var toSet C.uint32_t = 0x1
+	if err := filter.setFilterAttr(filterAttrTsync, toSet); err != nil {
+		return nil, err
+	}
 
 	return filter, nil
 }
@@ -681,24 +687,9 @@ func (f *ScmpFilter) GetNoNewPrivsBit() (bool, error) {
 // GetTsyncBit returns whether Thread Synchronization will be enabled on the
 // filter being loaded, or an error if an issue was encountered retrieving the
 // value.
-// Thread Sync ensures that all members of the thread group of the calling
-// process will share the same Seccomp filter set.
-// Tsync is a fairly recent addition to the Linux kernel and older kernels
-// lack support. If the running kernel does not support Tsync and it is
-// requested in a filter, Libseccomp will not enable TSync support and will
-// proceed as normal.
-// This function is unavailable before v2.2 of libseccomp and will return an
-// error.
+// This is a no operation as Thread Synchronization is set by NewFilter, but
+// is kept around for compatability.
 func (f *ScmpFilter) GetTsyncBit() (bool, error) {
-	tSync, err := f.getFilterAttr(filterAttrTsync)
-	if err != nil {
-		return false, err
-	}
-
-	if tSync == 0 {
-		return false, nil
-	}
-
 	return true, nil
 }
 
@@ -731,22 +722,10 @@ func (f *ScmpFilter) SetNoNewPrivsBit(state bool) error {
 // SetTsync sets whether Thread Synchronization will be enabled on the filter
 // being loaded. Returns an error if setting Tsync failed, or the filter is
 // invalid.
-// Thread Sync ensures that all members of the thread group of the calling
-// process will share the same Seccomp filter set.
-// Tsync is a fairly recent addition to the Linux kernel and older kernels
-// lack support. If the running kernel does not support Tsync and it is
-// requested in a filter, Libseccomp will not enable TSync support and will
-// proceed as normal.
-// This function is unavailable before v2.2 of libseccomp and will return an
-// error.
+// This is a no operation as Thread Synchronization is set by NewFilter, but
+// is kept around for compatability.
 func (f *ScmpFilter) SetTsync(enable bool) error {
-	var toSet C.uint32_t = 0x0
-
-	if enable {
-		toSet = 0x1
-	}
-
-	return f.setFilterAttr(filterAttrTsync, toSet)
+	return nil
 }
 
 // SetSyscallPriority sets a syscall's priority.

@@ -1,5 +1,11 @@
 # libseccomp-golang
 
+.PHONY: all check check-build check-syntax fix-syntax vet test lint
+
+all: check-build
+
+check: vet test
+
 check-build:
 	go build
 
@@ -18,8 +24,3 @@ test:
 lint:
 	@$(if $(shell which golint),true,$(error "install golint and include it in your PATH"))
 	golint -set_exit_status
-
-check: vet test
-
-.PHONY: check-build check-syntax fix-syntax vet test lint check
-.DEFAULT_GOAL := check-build

@@ -29,7 +29,6 @@ Documentation is also available at:
 
 	-> https://godoc.org/github.com/seccomp/libseccomp-golang
 
-
 * Installing the package
 
 Using go get:
@@ -43,10 +42,7 @@ you want to run the standard regression tests, you can excute the following:
 
 	$ make check
 
-golint, available from
+In order to execute the 'make lint' recipe the 'golint' tool is needed, it
+can be found at:
 
 	-> https://github.com/golang/lint
-
-is required for the lint recipie
-
-	$ make lint

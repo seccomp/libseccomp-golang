@@ -324,7 +324,7 @@ func (a ScmpAction) GetReturnCode() int16 {
 // GetLibraryVersion returns the version of the library the bindings are built
 // against.
 // The version is formatted as follows: Major.Minor.Micro
-func GetLibraryVersion() (major, minor, micro int) {
+func GetLibraryVersion() (major, minor, micro uint) {
 	return verMajor, verMinor, verMicro
 }
 

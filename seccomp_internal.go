@@ -120,9 +120,37 @@ const int      C_CMP_GE            = (int)SCMP_CMP_GE;
 const int      C_CMP_GT            = (int)SCMP_CMP_GT;
 const int      C_CMP_MASKED_EQ     = (int)SCMP_CMP_MASKED_EQ;
 
-const int      C_VERSION_MAJOR     = SCMP_VER_MAJOR;
-const int      C_VERSION_MINOR     = SCMP_VER_MINOR;
-const int      C_VERSION_MICRO     = SCMP_VER_MICRO;
+#if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR >= 3
+unsigned int get_major_version()
+{
+       return seccomp_version()->major;
+}
+
+unsigned int get_minor_version()
+{
+       return seccomp_version()->minor;
+}
+
+unsigned int get_micro_version()
+{
+       return seccomp_version()->micro;
+}
+#else
+unsigned int get_major_version()
+{
+       return (unsigned int)SCMP_MAJOR_VERSION;
+}
+
+unsigned int get_minor_version()
+{
+       return (unsigned int)SCMP_MINOR_VERSION;
+}
+
+unsigned int get_micro_version()
+{
+       return (unsigned int)SCMP_MICRO_VERSION;
+}
+#endif
 
 typedef struct scmp_arg_cmp* scmp_cast_t;
 
@@ -177,15 +205,15 @@ var (
 	// Error thrown on bad filter context
 	errBadFilter = fmt.Errorf("filter is invalid or uninitialized")
 	// Constants representing library major, minor, and micro versions
-	verMajor = int(C.C_VERSION_MAJOR)
-	verMinor = int(C.C_VERSION_MINOR)
-	verMicro = int(C.C_VERSION_MICRO)
+	verMajor = uint(C.get_major_version())
+	verMinor = uint(C.get_minor_version())
+	verMicro = uint(C.get_micro_version())
 )
 
 // Nonexported functions
 
 // Check if library version is greater than or equal to the given one
-func checkVersionAbove(major, minor, micro int) bool {
+func checkVersionAbove(major, minor, micro uint) bool {
 	return (verMajor > major) ||
 		(verMajor == major && verMinor > minor) ||
 		(verMajor == major && verMinor == minor && verMicro >= micro)

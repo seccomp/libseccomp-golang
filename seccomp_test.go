@@ -42,7 +42,7 @@ var versionErrorTests = []versionErrorTest{
 			"",
 		},
 		"Libseccomp version too low: " +
-			"deadbeef: minimum supported is 2.1.0: " +
+			"deadbeef: minimum supported is 2.2.0: " +
 			"detected " + versionStr,
 	},
 	{
@@ -50,7 +50,7 @@ var versionErrorTests = []versionErrorTest{
 			"",
 			"",
 		},
-		"Libseccomp version too low: minimum supported is 2.1.0: " +
+		"Libseccomp version too low: minimum supported is 2.2.0: " +
 			"detected " + versionStr,
 	},
 }

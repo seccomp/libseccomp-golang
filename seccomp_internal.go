@@ -20,42 +20,14 @@ import (
 #include <seccomp.h>
 
 #if SCMP_VER_MAJOR < 2
-#error Minimum supported version of Libseccomp is v2.1.0
-#elif SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 1
-#error Minimum supported version of Libseccomp is v2.1.0
+#error Minimum supported version of Libseccomp is v2.2.0
+#elif SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 2
+#error Minimum supported version of Libseccomp is v2.2.0
 #endif
 
 #define ARCH_BAD ~0
 
 const uint32_t C_ARCH_BAD = ARCH_BAD;
-
-#ifndef SCMP_ARCH_AARCH64
-#define SCMP_ARCH_AARCH64 ARCH_BAD
-#endif
-
-#ifndef SCMP_ARCH_MIPS
-#define SCMP_ARCH_MIPS ARCH_BAD
-#endif
-
-#ifndef SCMP_ARCH_MIPS64
-#define SCMP_ARCH_MIPS64 ARCH_BAD
-#endif
-
-#ifndef SCMP_ARCH_MIPS64N32
-#define SCMP_ARCH_MIPS64N32 ARCH_BAD
-#endif
-
-#ifndef SCMP_ARCH_MIPSEL
-#define SCMP_ARCH_MIPSEL ARCH_BAD
-#endif
-
-#ifndef SCMP_ARCH_MIPSEL64
-#define SCMP_ARCH_MIPSEL64 ARCH_BAD
-#endif
-
-#ifndef SCMP_ARCH_MIPSEL64N32
-#define SCMP_ARCH_MIPSEL64N32 ARCH_BAD
-#endif
 
 #ifndef SCMP_ARCH_PPC
 #define SCMP_ARCH_PPC ARCH_BAD
@@ -100,12 +72,6 @@ const uint32_t C_ACT_TRAP          = SCMP_ACT_TRAP;
 const uint32_t C_ACT_ERRNO         = SCMP_ACT_ERRNO(0);
 const uint32_t C_ACT_TRACE         = SCMP_ACT_TRACE(0);
 const uint32_t C_ACT_ALLOW         = SCMP_ACT_ALLOW;
-
-// If TSync is not supported, make sure it doesn't map to a supported filter attribute
-// Don't worry about major version < 2, the minimum version checks should catch that case
-#if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 2
-#define SCMP_FLTATR_CTL_TSYNC _SCMP_CMP_MIN
-#endif
 
 const uint32_t C_ATTRIBUTE_DEFAULT = (uint32_t)SCMP_FLTATR_ACT_DEFAULT;
 const uint32_t C_ATTRIBUTE_BADARCH = (uint32_t)SCMP_FLTATR_ACT_BADARCH;
@@ -219,9 +185,9 @@ func checkVersionAbove(major, minor, micro uint) bool {
 		(verMajor == major && verMinor == minor && verMicro >= micro)
 }
 
-// Ensure that the library is supported, i.e. >= 2.1.0.
+// Ensure that the library is supported, i.e. >= 2.2.0.
 func ensureSupportedVersion() error {
-	if !checkVersionAbove(2, 1, 0) {
+	if !checkVersionAbove(2, 2, 0) {
 		return VersionError{}
 	}
 	return nil
@@ -243,13 +209,6 @@ func (f *ScmpFilter) getFilterAttr(attr scmpFilterAttr) (C.uint32_t, error) {
 		return 0x0, errBadFilter
 	}
 
-	if !checkVersionAbove(2, 2, 0) && attr == filterAttrTsync {
-		return 0x0, VersionError{
-			message: "thread synchronization attribute is not supported",
-			minimum: "2.2.0",
-		}
-	}
-
 	var attribute C.uint32_t
 
 	retCode := C.seccomp_attr_get(f.filterCtx, attr.toNative(), &attribute)
@@ -267,13 +226,6 @@ func (f *ScmpFilter) setFilterAttr(attr scmpFilterAttr, value C.uint32_t) error 
 
 	if !f.valid {
 		return errBadFilter
-	}
-
-	if !checkVersionAbove(2, 2, 0) && attr == filterAttrTsync {
-		return VersionError{
-			message: "thread synchronization attribute is not supported",
-			minimum: "2.2.0",
-		}
 	}
 
 	retCode := C.seccomp_attr_set(f.filterCtx, attr.toNative(), value)

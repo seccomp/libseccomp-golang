@@ -465,6 +465,11 @@ func TestRuleAddAndLoad(t *testing.T) {
 		t.Errorf("Error getting syscall number of setreuid: %s", err)
 	}
 
+	call3, err := GetSyscallFromName("setreuid32")
+	if err != nil {
+		t.Errorf("Error getting syscall number of setreuid32: %s", err)
+	}
+
 	uid := syscall.Getuid()
 	euid := syscall.Geteuid()
 
@@ -490,6 +495,11 @@ func TestRuleAddAndLoad(t *testing.T) {
 		t.Errorf("Error adding conditional rule: %s", err)
 	}
 
+	err = filter1.AddRuleConditional(call3, ActErrno.SetReturnCode(0x3), conditions)
+	if err != nil {
+		t.Errorf("Error adding second conditional rule: %s", err)
+	}
+
 	err = filter1.Load()
 	if err != nil {
 		t.Errorf("Error loading filter: %s", err)
@@ -503,7 +513,9 @@ func TestRuleAddAndLoad(t *testing.T) {
 
 	// Try making a Geteuid syscall that should normally succeed
 	err = syscall.Setreuid(uid, euid)
-	if err != syscall.Errno(2) {
+	if err == nil {
 		t.Errorf("Syscall should have returned error code!")
+	} else if err != syscall.Errno(2) && err != syscall.Errno(3) {
+		t.Errorf("Syscall returned incorrect error code - likely not blocked by Seccomp!")
 	}
 }

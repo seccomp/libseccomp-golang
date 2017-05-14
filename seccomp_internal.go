@@ -49,6 +49,26 @@ const uint32_t C_ARCH_BAD = ARCH_BAD;
 #define SCMP_ARCH_S390X ARCH_BAD
 #endif
 
+#ifndef SCMP_ARCH_PPC
+#define SCMP_ARCH_PPC ARCH_BAD
+#endif
+
+#ifndef SCMP_ARCH_PPC64
+#define SCMP_ARCH_PPC64 ARCH_BAD
+#endif
+
+#ifndef SCMP_ARCH_PPC64LE
+#define SCMP_ARCH_PPC64LE ARCH_BAD
+#endif
+
+#ifndef SCMP_ARCH_S390
+#define SCMP_ARCH_S390 ARCH_BAD
+#endif
+
+#ifndef SCMP_ARCH_S390X
+#define SCMP_ARCH_S390X ARCH_BAD
+#endif
+
 const uint32_t C_ARCH_NATIVE       = SCMP_ARCH_NATIVE;
 const uint32_t C_ARCH_X86          = SCMP_ARCH_X86;
 const uint32_t C_ARCH_X86_64       = SCMP_ARCH_X86_64;

@@ -211,7 +211,7 @@ func GetArchFromString(arch string) (ScmpArch, error) {
 	case "s390x":
 		return ArchS390X, nil
 	default:
-		return ArchInvalid, fmt.Errorf("cannot convert unrecognized string %s", arch)
+		return ArchInvalid, fmt.Errorf("cannot convert unrecognized string %q", arch)
 	}
 }
 
@@ -255,7 +255,7 @@ func (a ScmpArch) String() string {
 	case ArchInvalid:
 		return "Invalid architecture"
 	default:
-		return "Unknown architecture"
+		return fmt.Sprintf("Unknown architecture %#x", uint(a))
 	}
 }
 
@@ -279,7 +279,7 @@ func (a ScmpCompareOp) String() string {
 	case CompareInvalid:
 		return "Invalid comparison operator"
 	default:
-		return "Unrecognized comparison operator"
+		return fmt.Sprintf("Unrecognized comparison operator %#x", uint(a))
 	}
 }
 
@@ -298,7 +298,7 @@ func (a ScmpAction) String() string {
 	case ActAllow:
 		return "Action: Allow system call"
 	default:
-		return "Unrecognized Action"
+		return fmt.Sprintf("Unrecognized Action %#x", uint(a))
 	}
 }
 
@@ -350,7 +350,7 @@ func (s ScmpSyscall) GetNameByArch(arch ScmpArch) (string, error) {
 
 	cString := C.seccomp_syscall_resolve_num_arch(arch.toNative(), C.int(s))
 	if cString == nil {
-		return "", fmt.Errorf("could not resolve syscall name")
+		return "", fmt.Errorf("could not resolve syscall name for %#x", int32(s))
 	}
 	defer C.free(unsafe.Pointer(cString))
 
@@ -373,7 +373,7 @@ func GetSyscallFromName(name string) (ScmpSyscall, error) {
 
 	result := C.seccomp_syscall_resolve_name(cString)
 	if result == scmpError {
-		return 0, fmt.Errorf("could not resolve name to syscall")
+		return 0, fmt.Errorf("could not resolve name to syscall: %q", name)
 	}
 
 	return ScmpSyscall(result), nil
@@ -397,7 +397,7 @@ func GetSyscallFromNameByArch(name string, arch ScmpArch) (ScmpSyscall, error) {
 
 	result := C.seccomp_syscall_resolve_name_arch(arch.toNative(), cString)
 	if result == scmpError {
-		return 0, fmt.Errorf("could not resolve name to syscall")
+		return 0, fmt.Errorf("could not resolve name to syscall: %q on %v", name, arch)
 	}
 
 	return ScmpSyscall(result), nil
@@ -426,9 +426,9 @@ func MakeCondition(arg uint, comparison ScmpCompareOp, values ...uint64) (ScmpCo
 	if comparison == CompareInvalid {
 		return condStruct, fmt.Errorf("invalid comparison operator")
 	} else if arg > 5 {
-		return condStruct, fmt.Errorf("syscalls only have up to 6 arguments")
+		return condStruct, fmt.Errorf("syscalls only have up to 6 arguments (%d given)", arg)
 	} else if len(values) > 2 {
-		return condStruct, fmt.Errorf("conditions can have at most 2 arguments")
+		return condStruct, fmt.Errorf("conditions can have at most 2 arguments (%d given)", len(values))
 	} else if len(values) == 0 {
 		return condStruct, fmt.Errorf("must provide at least one value to compare against")
 	}

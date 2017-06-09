@@ -260,7 +260,7 @@ func (f *ScmpFilter) addRuleWrapper(call ScmpSyscall, action ScmpAction, exact b
 	}
 
 	if syscall.Errno(-1*retCode) == syscall.EFAULT {
-		return fmt.Errorf("unrecognized syscall")
+		return fmt.Errorf("unrecognized syscall %#x", int32(call))
 	} else if syscall.Errno(-1*retCode) == syscall.EPERM {
 		return fmt.Errorf("requested action matches default action of filter")
 	} else if syscall.Errno(-1*retCode) == syscall.EINVAL {
@@ -319,11 +319,11 @@ func (f *ScmpFilter) addRuleGeneric(call ScmpSyscall, action ScmpAction, exact b
 // Helper - Sanitize Arch token input
 func sanitizeArch(in ScmpArch) error {
 	if in < archStart || in > archEnd {
-		return fmt.Errorf("unrecognized architecture")
+		return fmt.Errorf("unrecognized architecture %#x", uint(in))
 	}
 
 	if in.toNative() == C.C_ARCH_BAD {
-		return fmt.Errorf("architecture is not supported on this version of the library")
+		return fmt.Errorf("architecture %v is not supported on this version of the library", in)
 	}
 
 	return nil
@@ -332,7 +332,7 @@ func sanitizeArch(in ScmpArch) error {
 func sanitizeAction(in ScmpAction) error {
 	inTmp := in & 0x0000FFFF
 	if inTmp < actionStart || inTmp > actionEnd {
-		return fmt.Errorf("unrecognized action")
+		return fmt.Errorf("unrecognized action %#x", uint(inTmp))
 	}
 
 	if inTmp != ActTrace && inTmp != ActErrno && (in&0xFFFF0000) != 0 {
@@ -344,7 +344,7 @@ func sanitizeAction(in ScmpAction) error {
 
 func sanitizeCompareOp(in ScmpCompareOp) error {
 	if in < compareOpStart || in > compareOpEnd {
-		return fmt.Errorf("unrecognized comparison operator")
+		return fmt.Errorf("unrecognized comparison operator %#x", uint(in))
 	}
 
 	return nil
@@ -387,7 +387,7 @@ func archFromNative(a C.uint32_t) (ScmpArch, error) {
 	case C.C_ARCH_S390X:
 		return ArchS390X, nil
 	default:
-		return 0x0, fmt.Errorf("unrecognized architecture")
+		return 0x0, fmt.Errorf("unrecognized architecture %#x", uint32(a))
 	}
 }
 
@@ -469,7 +469,7 @@ func actionFromNative(a C.uint32_t) (ScmpAction, error) {
 	case C.C_ACT_ALLOW:
 		return ActAllow, nil
 	default:
-		return 0x0, fmt.Errorf("unrecognized action")
+		return 0x0, fmt.Errorf("unrecognized action %#x", uint32(a))
 	}
 }
 

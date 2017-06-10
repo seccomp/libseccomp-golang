@@ -208,6 +208,10 @@ func filterFinalizer(f *ScmpFilter) {
 	f.Release()
 }
 
+func errRc(rc C.int) error {
+	return syscall.Errno(-1 * rc)
+}
+
 // Get a raw filter attribute
 func (f *ScmpFilter) getFilterAttr(attr scmpFilterAttr) (C.uint32_t, error) {
 	f.lock.Lock()
@@ -221,7 +225,7 @@ func (f *ScmpFilter) getFilterAttr(attr scmpFilterAttr) (C.uint32_t, error) {
 
 	retCode := C.seccomp_attr_get(f.filterCtx, attr.toNative(), &attribute)
 	if retCode != 0 {
-		return 0x0, syscall.Errno(-1 * retCode)
+		return 0x0, errRc(retCode)
 	}
 
 	return attribute, nil
@@ -238,7 +242,7 @@ func (f *ScmpFilter) setFilterAttr(attr scmpFilterAttr, value C.uint32_t) error 
 
 	retCode := C.seccomp_attr_set(f.filterCtx, attr.toNative(), value)
 	if retCode != 0 {
-		return syscall.Errno(-1 * retCode)
+		return errRc(retCode)
 	}
 
 	return nil
@@ -259,14 +263,17 @@ func (f *ScmpFilter) addRuleWrapper(call ScmpSyscall, action ScmpAction, exact b
 		retCode = C.seccomp_rule_add_array(f.filterCtx, action.toNative(), C.int(call), length, cond)
 	}
 
-	if syscall.Errno(-1*retCode) == syscall.EFAULT {
-		return fmt.Errorf("unrecognized syscall %#x", int32(call))
-	} else if syscall.Errno(-1*retCode) == syscall.EPERM {
-		return fmt.Errorf("requested action matches default action of filter")
-	} else if syscall.Errno(-1*retCode) == syscall.EINVAL {
-		return fmt.Errorf("two checks on same syscall argument")
-	} else if retCode != 0 {
-		return syscall.Errno(-1 * retCode)
+	if retCode != 0 {
+		switch e := errRc(retCode); e {
+		case syscall.EFAULT:
+			return fmt.Errorf("unrecognized syscall %#x", int32(call))
+		case syscall.EPERM:
+			return fmt.Errorf("requested action matches default action of filter")
+		case syscall.EINVAL:
+			return fmt.Errorf("two checks on same syscall argument")
+		default:
+			return e
+		}
 	}
 
 	return nil

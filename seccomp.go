@@ -527,9 +527,8 @@ func (f *ScmpFilter) Reset(defaultAction ScmpAction) error {
 		return errBadFilter
 	}
 
-	retCode := C.seccomp_reset(f.filterCtx, defaultAction.toNative())
-	if retCode != 0 {
-		return syscall.Errno(-1 * retCode)
+	if retCode := C.seccomp_reset(f.filterCtx, defaultAction.toNative()); retCode != 0 {
+		return errRc(retCode)
 	}
 
 	return nil
@@ -575,11 +574,12 @@ func (f *ScmpFilter) Merge(src *ScmpFilter) error {
 	}
 
 	// Merge the filters
-	retCode := C.seccomp_merge(f.filterCtx, src.filterCtx)
-	if syscall.Errno(-1*retCode) == syscall.EINVAL {
-		return fmt.Errorf("filters could not be merged due to a mismatch in attributes or invalid filter")
-	} else if retCode != 0 {
-		return syscall.Errno(-1 * retCode)
+	if retCode := C.seccomp_merge(f.filterCtx, src.filterCtx); retCode != 0 {
+		if e := errRc(retCode); e == syscall.EINVAL {
+			return fmt.Errorf("filters could not be merged due to a mismatch in attributes or invalid filter")
+		} else {
+			return e
+		}
 	}
 
 	src.valid = false
@@ -608,12 +608,13 @@ func (f *ScmpFilter) IsArchPresent(arch ScmpArch) (bool, error) {
 		return false, errBadFilter
 	}
 
-	retCode := C.seccomp_arch_exist(f.filterCtx, arch.toNative())
-	if syscall.Errno(-1*retCode) == syscall.EEXIST {
-		// -EEXIST is "arch not present"
-		return false, nil
-	} else if retCode != 0 {
-		return false, syscall.Errno(-1 * retCode)
+	if retCode := C.seccomp_arch_exist(f.filterCtx, arch.toNative()); retCode != 0 {
+		if e := errRc(retCode); e == syscall.EEXIST {
+			// -EEXIST is "arch not present"
+			return false, nil
+		} else {
+			return false, e
+		}
 	}
 
 	return true, nil
@@ -636,9 +637,10 @@ func (f *ScmpFilter) AddArch(arch ScmpArch) error {
 	// Libseccomp returns -EEXIST if the specified architecture is already
 	// present. Succeed silently in this case, as it's not fatal, and the
 	// architecture is present already.
-	retCode := C.seccomp_arch_add(f.filterCtx, arch.toNative())
-	if retCode != 0 && syscall.Errno(-1*retCode) != syscall.EEXIST {
-		return syscall.Errno(-1 * retCode)
+	if retCode := C.seccomp_arch_add(f.filterCtx, arch.toNative()); retCode != 0 {
+		if e := errRc(retCode); e != syscall.EEXIST {
+			return e
+		}
 	}
 
 	return nil
@@ -661,9 +663,10 @@ func (f *ScmpFilter) RemoveArch(arch ScmpArch) error {
 	// Similar to AddArch, -EEXIST is returned if the arch is not present
 	// Succeed silently in that case, this is not fatal and the architecture
 	// is not present in the filter after RemoveArch
-	retCode := C.seccomp_arch_remove(f.filterCtx, arch.toNative())
-	if retCode != 0 && syscall.Errno(-1*retCode) != syscall.EEXIST {
-		return syscall.Errno(-1 * retCode)
+	if retCode := C.seccomp_arch_remove(f.filterCtx, arch.toNative()); retCode != 0 {
+		if e := errRc(retCode); e != syscall.EEXIST {
+			return e
+		}
 	}
 
 	return nil
@@ -680,7 +683,7 @@ func (f *ScmpFilter) Load() error {
 	}
 
 	if retCode := C.seccomp_load(f.filterCtx); retCode != 0 {
-		return syscall.Errno(-1 * retCode)
+		return errRc(retCode)
 	}
 
 	return nil
@@ -771,7 +774,7 @@ func (f *ScmpFilter) SetSyscallPriority(call ScmpSyscall, priority uint8) error 
 
 	if retCode := C.seccomp_syscall_priority(f.filterCtx, C.int(call),
 		C.uint8_t(priority)); retCode != 0 {
-		return syscall.Errno(-1 * retCode)
+		return errRc(retCode)
 	}
 
 	return nil
@@ -836,7 +839,7 @@ func (f *ScmpFilter) ExportPFC(file *os.File) error {
 	}
 
 	if retCode := C.seccomp_export_pfc(f.filterCtx, C.int(fd)); retCode != 0 {
-		return syscall.Errno(-1 * retCode)
+		return errRc(retCode)
 	}
 
 	return nil
@@ -857,7 +860,7 @@ func (f *ScmpFilter) ExportBPF(file *os.File) error {
 	}
 
 	if retCode := C.seccomp_export_bpf(f.filterCtx, C.int(fd)); retCode != 0 {
-		return syscall.Errno(-1 * retCode)
+		return errRc(retCode)
 	}
 
 	return nil

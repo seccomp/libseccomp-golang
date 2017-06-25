@@ -204,6 +204,19 @@ func TestMakeCondition(t *testing.T) {
 	}
 }
 
+// General Utility Function Tests
+
+func TestGetRuntimeLibraryVersion(t *testing.T) {
+	// Under test, we assume the library we build and run with are the same.
+	bmajor, bminor, bmicro := GetLibraryVersion()
+	rmajor, rminor, rmicro := GetRuntimeLibraryVersion()
+
+	if bmajor != rmajor || bminor != rminor || bmicro != rmicro {
+		t.Errorf("Build library version should match runtime library version")
+	}
+}
+
+
 // Utility Function Tests
 
 func TestGetNativeArch(t *testing.T) {

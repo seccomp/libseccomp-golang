@@ -68,10 +68,15 @@ const uint32_t C_ARCH_PPC64LE      = SCMP_ARCH_PPC64LE;
 const uint32_t C_ARCH_S390         = SCMP_ARCH_S390;
 const uint32_t C_ARCH_S390X        = SCMP_ARCH_S390X;
 
+#ifndef SCMP_ACT_LOG
+#define SCMP_ACT_LOG 0x7ffc0000U
+#endif
+
 const uint32_t C_ACT_KILL          = SCMP_ACT_KILL;
 const uint32_t C_ACT_TRAP          = SCMP_ACT_TRAP;
 const uint32_t C_ACT_ERRNO         = SCMP_ACT_ERRNO(0);
 const uint32_t C_ACT_TRACE         = SCMP_ACT_TRACE(0);
+const uint32_t C_ACT_LOG           = SCMP_ACT_LOG;
 const uint32_t C_ACT_ALLOW         = SCMP_ACT_ALLOW;
 
 // The libseccomp SCMP_FLTATR_CTL_LOG member of the scmp_filter_attr enum was
@@ -198,7 +203,7 @@ const (
 	archEnd   ScmpArch = ArchS390X
 	// Comparison boundaries to check for action validity
 	actionStart ScmpAction = ActKill
-	actionEnd   ScmpAction = ActAllow
+	actionEnd   ScmpAction = ActLog
 	// Comparison boundaries to check for comparison operator validity
 	compareOpStart ScmpCompareOp = CompareNotEqual
 	compareOpEnd   ScmpCompareOp = CompareMaskedEqual
@@ -518,6 +523,8 @@ func actionFromNative(a C.uint32_t) (ScmpAction, error) {
 		return ActErrno.SetReturnCode(int16(aTmp)), nil
 	case C.C_ACT_TRACE:
 		return ActTrace.SetReturnCode(int16(aTmp)), nil
+	case C.C_ACT_LOG:
+		return ActLog, nil
 	case C.C_ACT_ALLOW:
 		return ActAllow, nil
 	default:
@@ -536,6 +543,8 @@ func (a ScmpAction) toNative() C.uint32_t {
 		return C.C_ACT_ERRNO | (C.uint32_t(a) >> 16)
 	case ActTrace:
 		return C.C_ACT_TRACE | (C.uint32_t(a) >> 16)
+	case ActLog:
+		return C.C_ACT_LOG
 	case ActAllow:
 		return C.C_ACT_ALLOW
 	default:

@@ -596,3 +596,75 @@ func TestRuleAddAndLoad(t *testing.T) {
 		t.Errorf("Syscall returned incorrect error code - likely not blocked by Seccomp!")
 	}
 }
+
+func TestLogAct(t *testing.T) {
+	expectedPid := syscall.Getpid()
+
+	api, err := GetApi()
+	if err != nil {
+		if !ApiLevelIsSupported() {
+			t.Skipf("Skipping test: %s", err)
+		}
+
+		t.Errorf("Error getting API level: %s", err)
+	} else if api < 3 {
+		t.Skipf("Skipping test: API level %d is less than 3", api)
+	}
+
+	filter, err := NewFilter(ActErrno.SetReturnCode(0x0001))
+	if err != nil {
+		t.Errorf("Error creating filter: %s", err)
+	}
+	defer filter.Release()
+
+	call, err := GetSyscallFromName("getpid")
+	if err != nil {
+		t.Errorf("Error getting syscall number of getpid: %s", err)
+	}
+
+	call1, err := GetSyscallFromName("write")
+	if err != nil {
+		t.Errorf("Error getting syscall number of write: %s", err)
+	}
+
+	call2, err := GetSyscallFromName("futex")
+	if err != nil {
+		t.Errorf("Error getting syscall number of futex: %s", err)
+	}
+
+	call3, err := GetSyscallFromName("exit_group")
+	if err != nil {
+		t.Errorf("Error getting syscall number of exit_group: %s", err)
+	}
+
+	err = filter.AddRule(call, ActLog)
+	if err != nil {
+		t.Errorf("Error adding rule to log syscall: %s", err)
+	}
+
+	err = filter.AddRule(call1, ActAllow)
+	if err != nil {
+		t.Errorf("Error adding rule to allow write syscall: %s", err)
+	}
+
+	err = filter.AddRule(call2, ActAllow)
+	if err != nil {
+		t.Errorf("Error adding rule to allow futex syscall: %s", err)
+	}
+
+	err = filter.AddRule(call3, ActAllow)
+	if err != nil {
+		t.Errorf("Error adding rule to allow exit_group syscall: %s", err)
+	}
+
+	err = filter.Load()
+	if err != nil {
+		t.Errorf("Error loading filter: %s", err)
+	}
+
+	// Try making a simple syscall, it should succeed
+	pid := syscall.Getpid()
+	if pid != expectedPid {
+		t.Errorf("Syscall should have returned expected pid (%d != %d)", pid, expectedPid)
+	}
+}

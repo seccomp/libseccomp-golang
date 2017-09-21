@@ -432,6 +432,38 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 		t.Errorf("No new privileges bit was not set correctly")
 	}
 
+	if ApiLevelIsSupported() {
+		api, err := GetApi()
+		if err != nil {
+			t.Errorf("Error getting API level: %s", err)
+		} else if api < 3 {
+			err = SetApi(3)
+			if err != nil {
+				t.Errorf("Error setting API level: %s", err)
+			}
+		}
+	}
+
+	err = filter.SetLogBit(true)
+	if err != nil {
+		if !ApiLevelIsSupported() {
+			t.Logf("Ignoring failure: %s\n", err)
+		} else {
+			t.Errorf("Error setting log bit")
+		}
+	}
+
+	log, err := filter.GetLogBit()
+	if err != nil {
+		if !ApiLevelIsSupported() {
+			t.Logf("Ignoring failure: %s\n", err)
+		} else {
+			t.Errorf("Error getting log bit")
+		}
+	} else if log != true {
+		t.Errorf("Log bit was not set correctly")
+	}
+
 	err = filter.SetBadArchAction(ActInvalid)
 	if err == nil {
 		t.Errorf("Setting bad arch action to an invalid action should error")

@@ -74,10 +74,18 @@ const uint32_t C_ACT_ERRNO         = SCMP_ACT_ERRNO(0);
 const uint32_t C_ACT_TRACE         = SCMP_ACT_TRACE(0);
 const uint32_t C_ACT_ALLOW         = SCMP_ACT_ALLOW;
 
+// The libseccomp SCMP_FLTATR_CTL_LOG member of the scmp_filter_attr enum was
+// added in v2.4.0
+#if (SCMP_VER_MAJOR < 2) || \
+    (SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 4)
+#define SCMP_FLTATR_CTL_LOG _SCMP_FLTATR_MIN
+#endif
+
 const uint32_t C_ATTRIBUTE_DEFAULT = (uint32_t)SCMP_FLTATR_ACT_DEFAULT;
 const uint32_t C_ATTRIBUTE_BADARCH = (uint32_t)SCMP_FLTATR_ACT_BADARCH;
 const uint32_t C_ATTRIBUTE_NNP     = (uint32_t)SCMP_FLTATR_CTL_NNP;
 const uint32_t C_ATTRIBUTE_TSYNC   = (uint32_t)SCMP_FLTATR_CTL_TSYNC;
+const uint32_t C_ATTRIBUTE_LOG     = (uint32_t)SCMP_FLTATR_CTL_LOG;
 
 const int      C_CMP_NE            = (int)SCMP_CMP_NE;
 const int      C_CMP_LT            = (int)SCMP_CMP_LT;
@@ -179,6 +187,7 @@ const (
 	filterAttrActBadArch scmpFilterAttr = iota
 	filterAttrNNP        scmpFilterAttr = iota
 	filterAttrTsync      scmpFilterAttr = iota
+	filterAttrLog        scmpFilterAttr = iota
 )
 
 const (
@@ -545,6 +554,8 @@ func (a scmpFilterAttr) toNative() uint32 {
 		return uint32(C.C_ATTRIBUTE_NNP)
 	case filterAttrTsync:
 		return uint32(C.C_ATTRIBUTE_TSYNC)
+	case filterAttrLog:
+		return uint32(C.C_ATTRIBUTE_LOG)
 	default:
 		return 0x0
 	}

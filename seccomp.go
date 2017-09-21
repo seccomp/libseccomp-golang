@@ -749,6 +749,30 @@ func (f *ScmpFilter) GetNoNewPrivsBit() (bool, error) {
 	return true, nil
 }
 
+// GetLogBit returns the current state the Log bit will be set to on the filter
+// being loaded, or an error if an issue was encountered retrieving the value.
+// The Log bit tells the kernel that all actions taken by the filter, with the
+// exception of ActAllow, should be logged.
+// The Log bit is only usable when libseccomp API level 3 or higher is
+// supported.
+func (f *ScmpFilter) GetLogBit() (bool, error) {
+	log, err := f.getFilterAttr(filterAttrLog)
+	if err != nil {
+		api, apiErr := getApi()
+		if (apiErr != nil && api == 0) || (apiErr == nil && api < 3) {
+			return false, fmt.Errorf("getting the log bit is only supported in libseccomp 2.4.0 and newer with API level 3 or higher")
+		}
+
+		return false, err
+	}
+
+	if log == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 // SetBadArchAction sets the default action taken on a syscall for an
 // architecture not in the filter, or an error if an issue was encountered
 // setting the value.
@@ -773,6 +797,28 @@ func (f *ScmpFilter) SetNoNewPrivsBit(state bool) error {
 	}
 
 	return f.setFilterAttr(filterAttrNNP, toSet)
+}
+
+// SetLogBit sets the state of the Log bit, which will be applied on filter
+// load, or an error if an issue was encountered setting the value.
+// The Log bit is only usable when libseccomp API level 3 or higher is
+// supported.
+func (f *ScmpFilter) SetLogBit(state bool) error {
+	var toSet C.uint32_t = 0x0
+
+	if state {
+		toSet = 0x1
+	}
+
+	err := f.setFilterAttr(filterAttrLog, toSet)
+	if err != nil {
+		api, apiErr := getApi()
+		if (apiErr != nil && api == 0) || (apiErr == nil && api < 3) {
+			return fmt.Errorf("setting the log bit is only supported in libseccomp 2.4.0 and newer with API level 3 or higher")
+		}
+	}
+
+	return err
 }
 
 // SetSyscallPriority sets a syscall's priority.

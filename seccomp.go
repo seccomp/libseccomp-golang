@@ -137,6 +137,10 @@ const (
 	ActTrace ScmpAction = iota
 	// ActAllow permits the syscall to continue execution
 	ActAllow ScmpAction = iota
+	// ActLog permits the syscall to continue execution after logging it.
+	// This action is only usable when libseccomp API level 3 or higher is
+	// supported.
+	ActLog ScmpAction = iota
 )
 
 const (
@@ -295,6 +299,8 @@ func (a ScmpAction) String() string {
 	case ActTrace:
 		return fmt.Sprintf("Action: Notify tracing processes with code %d",
 			(a >> 16))
+	case ActLog:
+		return "Action: Log system call"
 	case ActAllow:
 		return "Action: Allow system call"
 	default:

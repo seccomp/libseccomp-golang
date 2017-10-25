@@ -16,6 +16,7 @@ import (
 
 // #cgo pkg-config: libseccomp
 /*
+#include <errno.h>
 #include <stdlib.h>
 #include <seccomp.h>
 
@@ -122,6 +123,25 @@ unsigned int get_micro_version()
 }
 #endif
 
+// The libseccomp API level functions were added in v2.4.0
+#if (SCMP_VER_MAJOR < 2) || \
+    (SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 4)
+const unsigned int seccomp_api_get(void)
+{
+	// libseccomp-golang requires libseccomp v2.2.0, at a minimum, which
+	// supported API level 2. However, the kernel may not support API level
+	// 2 constructs which are the seccomp() system call and the TSYNC
+	// filter flag. Return the "reserved" value of 0 here to indicate that
+	// proper API level support is not available in libseccomp.
+	return 0;
+}
+
+int seccomp_api_set(unsigned int level)
+{
+	return -EOPNOTSUPP;
+}
+#endif
+
 typedef struct scmp_arg_cmp* scmp_cast_t;
 
 void* make_arg_cmp_array(unsigned int length)
@@ -198,6 +218,29 @@ func ensureSupportedVersion() error {
 	if !checkVersionAbove(2, 2, 0) {
 		return VersionError{}
 	}
+	return nil
+}
+
+// Get the API level
+func getApi() (uint, error) {
+	api := C.seccomp_api_get()
+	if api == 0 {
+		return 0, fmt.Errorf("API level operations are not supported")
+	}
+
+	return uint(api), nil
+}
+
+// Set the API level
+func setApi(api uint) error {
+	if retCode := C.seccomp_api_set(C.uint(api)); retCode != 0 {
+		if syscall.Errno(-1*retCode) == syscall.EOPNOTSUPP {
+			return fmt.Errorf("API level operations are not supported")
+		}
+
+		return fmt.Errorf("could not set API level: %v", retCode)
+	}
+
 	return nil
 }
 

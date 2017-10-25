@@ -64,6 +64,51 @@ func TestVersionError(t *testing.T) {
 	}
 }
 
+func ApiLevelIsSupported() bool {
+	return verMajor > 2 ||
+		(verMajor == 2 && verMinor > 3) ||
+		(verMajor == 2 && verMinor == 3 && verMicro >= 3)
+}
+
+func TestGetApiLevel(t *testing.T) {
+	api, err := GetApi()
+	if !ApiLevelIsSupported() {
+		if api != 0 {
+			t.Errorf("API level returned despite lack of support: %v", api)
+		} else if err == nil {
+			t.Errorf("No error returned despite lack of API level support")
+		}
+
+		t.Skipf("Skipping test: %s", err)
+	} else if err != nil {
+		t.Errorf("Error getting API level: %s", err)
+	}
+	fmt.Printf("Got API level of %v\n", api)
+}
+
+func TestSetApiLevel(t *testing.T) {
+	var expectedApi uint
+
+	expectedApi = 1
+	err := SetApi(expectedApi)
+	if !ApiLevelIsSupported() {
+		if err == nil {
+			t.Errorf("No error returned despite lack of API level support")
+		}
+
+		t.Skipf("Skipping test: %s", err)
+	} else if err != nil {
+		t.Errorf("Error setting API level: %s", err)
+	}
+
+	api, err := GetApi()
+	if err != nil {
+		t.Errorf("Error getting API level: %s", err)
+	} else if api != expectedApi {
+		t.Errorf("Got API level %v: expected %v", api, expectedApi)
+	}
+}
+
 func TestActionSetReturnCode(t *testing.T) {
 	if ActInvalid.SetReturnCode(0x0010) != ActInvalid {
 		t.Errorf("Able to set a return code on invalid action!")

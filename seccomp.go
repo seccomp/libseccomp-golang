@@ -328,6 +328,25 @@ func GetLibraryVersion() (major, minor, micro uint) {
 	return verMajor, verMinor, verMicro
 }
 
+// GetApi returns the API level supported by the system.
+// Returns a positive int containing the API level, or 0 with an error if the
+// API level could not be detected due to the library being older than v2.4.0.
+// See the seccomp_api_get(3) man page for details on available API levels:
+// https://github.com/seccomp/libseccomp/blob/master/doc/man/man3/seccomp_api_get.3
+func GetApi() (uint, error) {
+	return getApi()
+}
+
+// SetApi forcibly sets the API level. General use of this function is strongly
+// discouraged.
+// Returns an error if the API level could not be set. An error is always
+// returned if the library is older than v2.4.0
+// See the seccomp_api_get(3) man page for details on available API levels:
+// https://github.com/seccomp/libseccomp/blob/master/doc/man/man3/seccomp_api_get.3
+func SetApi(api uint) error {
+	return setApi(api)
+}
+
 // Syscall functions
 
 // GetName retrieves the name of a syscall from its number.

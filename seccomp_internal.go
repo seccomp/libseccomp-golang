@@ -72,7 +72,17 @@ const uint32_t C_ARCH_S390X        = SCMP_ARCH_S390X;
 #define SCMP_ACT_LOG 0x7ffc0000U
 #endif
 
+#ifndef SCMP_ACT_KILL_PROCESS
+#define SCMP_ACT_KILL_PROCESS 0x80000000U
+#endif
+
+#ifndef SCMP_ACT_KILL_THREAD
+#define SCMP_ACT_KILL_THREAD	0x00000000U
+#endif
+
 const uint32_t C_ACT_KILL          = SCMP_ACT_KILL;
+const uint32_t C_ACT_KILL_PROCESS  = SCMP_ACT_KILL_PROCESS;
+const uint32_t C_ACT_KILL_THREAD   = SCMP_ACT_KILL_THREAD;
 const uint32_t C_ACT_TRAP          = SCMP_ACT_TRAP;
 const uint32_t C_ACT_ERRNO         = SCMP_ACT_ERRNO(0);
 const uint32_t C_ACT_TRACE         = SCMP_ACT_TRACE(0);
@@ -203,7 +213,7 @@ const (
 	archEnd   ScmpArch = ArchS390X
 	// Comparison boundaries to check for action validity
 	actionStart ScmpAction = ActKill
-	actionEnd   ScmpAction = ActLog
+	actionEnd   ScmpAction = ActKillProcess
 	// Comparison boundaries to check for comparison operator validity
 	compareOpStart ScmpCompareOp = CompareNotEqual
 	compareOpEnd   ScmpCompareOp = CompareMaskedEqual
@@ -524,6 +534,10 @@ func actionFromNative(a C.uint32_t) (ScmpAction, error) {
 	switch a & 0xFFFF0000 {
 	case C.C_ACT_KILL:
 		return ActKill, nil
+	case C.C_ACT_KILL_PROCESS:
+		return ActKillProcess, nil
+	case C.C_ACT_KILL_THREAD:
+		return ActKillThread, nil
 	case C.C_ACT_TRAP:
 		return ActTrap, nil
 	case C.C_ACT_ERRNO:
@@ -544,6 +558,10 @@ func (a ScmpAction) toNative() C.uint32_t {
 	switch a & 0xFFFF {
 	case ActKill:
 		return C.C_ACT_KILL
+	case ActKillProcess:
+		return C.C_ACT_KILL_PROCESS
+	case ActKillThread:
+		return C.C_ACT_KILL_THREAD
 	case ActTrap:
 		return C.C_ACT_TRAP
 	case ActErrno:

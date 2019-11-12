@@ -668,3 +668,36 @@ func TestLogAct(t *testing.T) {
 		t.Errorf("Syscall should have returned expected pid (%d != %d)", pid, expectedPid)
 	}
 }
+
+func TestCreateActKillThreadFilter(t *testing.T) {
+	filter, err := NewFilter(ActKillThread)
+	if err != nil {
+		t.Errorf("Error creating filter: %s", err)
+	}
+
+	if !filter.IsValid() {
+		t.Errorf("Filter created by NewFilter was not valid")
+	}
+}
+
+func TestCreateActKillProcessFilter(t *testing.T) {
+	api, err := GetApi()
+	if err != nil {
+		if !ApiLevelIsSupported() {
+			t.Skipf("Skipping test: %s", err)
+		}
+
+		t.Errorf("Error getting API level: %s", err)
+	} else if api < 3 {
+		t.Skipf("Skipping test: API level %d is less than 3", api)
+	}
+
+	filter, err := NewFilter(ActKillThread)
+	if err != nil {
+		t.Errorf("Error creating filter: %s", err)
+	}
+
+	if !filter.IsValid() {
+		t.Errorf("Filter created by NewFilter was not valid")
+	}
+}

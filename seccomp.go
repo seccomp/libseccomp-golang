@@ -125,7 +125,8 @@ const (
 	// ActInvalid is a placeholder to ensure uninitialized ScmpAction
 	// variables are invalid
 	ActInvalid ScmpAction = iota
-	// ActKill kills the process
+	// ActKill kills the thread that violated the rule. It is the same as ActKillThread.
+	// All other threads from the same thread group will continue to execute.
 	ActKill ScmpAction = iota
 	// ActTrap throws SIGSYS
 	ActTrap ScmpAction = iota
@@ -141,6 +142,14 @@ const (
 	// This action is only usable when libseccomp API level 3 or higher is
 	// supported.
 	ActLog ScmpAction = iota
+	// ActKillThread kills the thread that violated the rule. It is the same as ActKill.
+	// All other threads from the same thread group will continue to execute.
+	ActKillThread ScmpAction = iota
+	// ActKillProcess kills the process that violated the rule.
+	// All threads in the thread group are also terminated.
+	// This action is only usable when libseccomp API level 3 or higher is
+	// supported.
+	ActKillProcess ScmpAction = iota
 )
 
 const (
@@ -290,8 +299,10 @@ func (a ScmpCompareOp) String() string {
 // String returns a string representation of a seccomp match action
 func (a ScmpAction) String() string {
 	switch a & 0xFFFF {
-	case ActKill:
-		return "Action: Kill Process"
+	case ActKill, ActKillThread:
+		return "Action: Kill thread"
+	case ActKillProcess:
+		return "Action: Kill process"
 	case ActTrap:
 		return "Action: Send SIGSYS"
 	case ActErrno:

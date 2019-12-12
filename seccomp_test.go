@@ -6,9 +6,60 @@ package seccomp
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
+	"strings"
 	"syscall"
 	"testing"
+	"time"
+	"unsafe"
 )
+
+// execInSubprocess calls the go test binary again for the same test.
+// This must be only top-level statment in the test function. Do not nest this.
+// It will slightly defect the test log output as the test is entered twice
+func execInSubprocess(t *testing.T, f func(t *testing.T)) {
+	const subprocessEnvKey = `GO_SUBPROCESS_KEY`
+	if testIDString, ok := os.LookupEnv(subprocessEnvKey); ok && testIDString == "1" {
+		t.Run(`subprocess`, f)
+		return
+	}
+
+	cmd := exec.Command(os.Args[0])
+	cmd.Args = []string{os.Args[0], "-test.run=" + t.Name() + "$", "-test.v=true"}
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, `-test.testlogfile=`) {
+			cmd.Args = append(cmd.Args, arg)
+		}
+	}
+	cmd.Env = []string{subprocessEnvKey + "=1"}
+	cmd.Stdin = os.Stdin
+
+	var b strings.Builder
+	cmd.Stdout = &b
+	cmd.Stderr = &b
+
+	err := cmd.Start()
+	if err != nil {
+		t.Logf("\n%s", b.String())
+		t.Error("failed to spawn test in sub-process", err)
+		t.FailNow()
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		t.Logf("\n%s", b.String())
+		if err, ok := err.(*exec.ExitError); ok {
+			// err.ExitCode() not available in go1.11
+			// https://github.com/golang/go/issues/26539
+			t.Errorf("Test failed: %v", err.String())
+		}
+		t.Error(`test failed`)
+		t.FailNow()
+	}
+	t.Logf("\n%s", b.String())
+}
 
 // Type Function Tests
 
@@ -71,6 +122,9 @@ func APILevelIsSupported() bool {
 }
 
 func TestGetAPILevel(t *testing.T) {
+	execInSubprocess(t, subprocessGetAPILevel)
+}
+func subprocessGetAPILevel(t *testing.T) {
 	api, err := GetAPI()
 	if !APILevelIsSupported() {
 		if api != 0 {
@@ -83,10 +137,13 @@ func TestGetAPILevel(t *testing.T) {
 	} else if err != nil {
 		t.Errorf("Error getting API level: %s", err)
 	}
-	fmt.Printf("Got API level of %v\n", api)
+	t.Logf("Got API level of %v\n", api)
 }
 
 func TestSetAPILevel(t *testing.T) {
+	execInSubprocess(t, subprocessSetAPILevel)
+}
+func subprocessSetAPILevel(t *testing.T) {
 	var expectedAPI uint
 
 	expectedAPI = 1
@@ -130,7 +187,7 @@ func TestSyscallGetName(t *testing.T) {
 	} else if len(name) == 0 {
 		t.Errorf("Empty name returned for syscall 0x1")
 	}
-	fmt.Printf("Got name of syscall 0x1 on native arch as %s\n", name)
+	t.Logf("Got name of syscall 0x1 on native arch as %s\n", name)
 
 	_, err = callFail.GetName()
 	if err == nil {
@@ -175,7 +232,7 @@ func TestGetSyscallFromName(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error getting syscall number of write: %s", err)
 	}
-	fmt.Printf("Got syscall number of write on native arch as %d\n", syscall)
+	t.Logf("Got syscall number of write on native arch as %d\n", syscall)
 
 	_, err = GetSyscallFromName(nameInval)
 	if err == nil {
@@ -193,7 +250,7 @@ func TestGetSyscallFromNameByArch(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error getting syscall number of write on AMD64: %s", err)
 	}
-	fmt.Printf("Got syscall number of write on AMD64 as %d\n", syscall)
+	t.Logf("Got syscall number of write on AMD64 as %d\n", syscall)
 
 	_, err = GetSyscallFromNameByArch(nameInval, arch1)
 	if err == nil {
@@ -256,7 +313,7 @@ func TestGetNativeArch(t *testing.T) {
 	if err != nil {
 		t.Errorf("GetNativeArch should not error!")
 	}
-	fmt.Printf("Got native arch of system as %s\n", arch.String())
+	t.Logf("Got native arch of system as %s\n", arch.String())
 }
 
 // Filter Tests
@@ -557,6 +614,9 @@ func TestMergeFilters(t *testing.T) {
 }
 
 func TestRuleAddAndLoad(t *testing.T) {
+	execInSubprocess(t, subprocessRuleAddAndLoad)
+}
+func subprocessRuleAddAndLoad(t *testing.T) {
 	// Test #1: Add a trivial filter
 	filter1, err := NewFilter(ActAllow)
 	if err != nil {
@@ -630,6 +690,9 @@ func TestRuleAddAndLoad(t *testing.T) {
 }
 
 func TestLogAct(t *testing.T) {
+	execInSubprocess(t, subprocessLogAct)
+}
+func subprocessLogAct(t *testing.T) {
 	expectedPid := syscall.Getpid()
 
 	api, err := GetAPI()
@@ -643,7 +706,7 @@ func TestLogAct(t *testing.T) {
 		t.Skipf("Skipping test: API level %d is less than 3", api)
 	}
 
-	filter, err := NewFilter(ActErrno.SetReturnCode(0x0001))
+	filter, err := NewFilter(ActAllow)
 	if err != nil {
 		t.Errorf("Error creating filter: %s", err)
 	}
@@ -654,39 +717,9 @@ func TestLogAct(t *testing.T) {
 		t.Errorf("Error getting syscall number of getpid: %s", err)
 	}
 
-	call1, err := GetSyscallFromName("write")
-	if err != nil {
-		t.Errorf("Error getting syscall number of write: %s", err)
-	}
-
-	call2, err := GetSyscallFromName("futex")
-	if err != nil {
-		t.Errorf("Error getting syscall number of futex: %s", err)
-	}
-
-	call3, err := GetSyscallFromName("exit_group")
-	if err != nil {
-		t.Errorf("Error getting syscall number of exit_group: %s", err)
-	}
-
 	err = filter.AddRule(call, ActLog)
 	if err != nil {
 		t.Errorf("Error adding rule to log syscall: %s", err)
-	}
-
-	err = filter.AddRule(call1, ActAllow)
-	if err != nil {
-		t.Errorf("Error adding rule to allow write syscall: %s", err)
-	}
-
-	err = filter.AddRule(call2, ActAllow)
-	if err != nil {
-		t.Errorf("Error adding rule to allow futex syscall: %s", err)
-	}
-
-	err = filter.AddRule(call3, ActAllow)
-	if err != nil {
-		t.Errorf("Error adding rule to allow exit_group syscall: %s", err)
 	}
 
 	err = filter.Load()
@@ -702,6 +735,9 @@ func TestLogAct(t *testing.T) {
 }
 
 func TestCreateActKillThreadFilter(t *testing.T) {
+	execInSubprocess(t, subprocessCreateActKillThreadFilter)
+}
+func subprocessCreateActKillThreadFilter(t *testing.T) {
 	filter, err := NewFilter(ActKillThread)
 	if err != nil {
 		t.Errorf("Error creating filter: %s", err)
@@ -713,6 +749,9 @@ func TestCreateActKillThreadFilter(t *testing.T) {
 }
 
 func TestCreateActKillProcessFilter(t *testing.T) {
+	execInSubprocess(t, subprocessCreateActKillProcessFilter)
+}
+func subprocessCreateActKillProcessFilter(t *testing.T) {
 	api, err := GetAPI()
 	if err != nil {
 		if !APILevelIsSupported() {
@@ -731,5 +770,272 @@ func TestCreateActKillProcessFilter(t *testing.T) {
 
 	if !filter.IsValid() {
 		t.Errorf("Filter created by NewFilter was not valid")
+	}
+}
+
+//
+// Seccomp notification tests
+//
+
+// notifTest describes a seccomp notification test
+type notifTest struct {
+	syscall     ScmpSyscall
+	args        [6]uintptr
+	arch        ScmpArch
+	respErr     int32
+	respVal     uint64
+	respFlags   uint32
+	expectedErr error
+	expectedVal uint64
+}
+
+// notifHandler handles seccomp notifications and responses
+func notifHandler(ch chan error, fd ScmpFd, tests []notifTest) {
+	for _, test := range tests {
+		req, err := NotifReceive(fd)
+		if err != nil {
+			ch <- fmt.Errorf("Error in NotifReceive(): %s", err)
+			return
+		}
+
+		if req.Data.Syscall != test.syscall {
+			want, _ := test.syscall.GetName()
+			got, _ := req.Data.Syscall.GetName()
+			ch <- fmt.Errorf("Error in notification request syscall: got %s, want %s", got, want)
+			return
+		}
+
+		if req.Data.Arch != test.arch {
+			ch <- fmt.Errorf("Error in notification request arch: got %s, want %s", req.Data.Arch, test.arch)
+			return
+		}
+
+		for i, arg := range test.args {
+			if arg != uintptr(req.Data.Args[i]) {
+				ch <- fmt.Errorf("Error in syscall arg[%d]: got 0x%x, want 0x%x", i, req.Data.Args[i], arg)
+				return
+			}
+		}
+
+		// TOCTOU check
+		if err := NotifIDValid(fd, req.ID); err != nil {
+			ch <- fmt.Errorf("TOCTOU check failed: req.ID is no longer valid: %s", err)
+			return
+		}
+
+		resp := &ScmpNotifResp{
+			ID:    req.ID,
+			Error: test.respErr,
+			Val:   test.respVal,
+			Flags: test.respFlags,
+		}
+
+		if err = NotifRespond(fd, resp); err != nil {
+			ch <- fmt.Errorf("Error in notification response: %s", err)
+			return
+		}
+
+		ch <- nil
+	}
+}
+
+func TestNotif(t *testing.T) {
+	execInSubprocess(t, subprocessNotif)
+}
+func subprocessNotif(t *testing.T) {
+	// seccomp notification requires API level >= 5
+	api, err := GetAPI()
+	if err != nil {
+		if !APILevelIsSupported() {
+			t.Skipf("Skipping test: %s", err)
+		}
+
+		t.Errorf("Error getting API level: %s", err)
+	} else {
+		t.Logf("Got API level %v", api)
+		if api < 5 {
+			err = SetAPI(5)
+			if err != nil {
+				t.Skipf("Skipping test: API level %d is less than 5 and could not set it to 5", api)
+				return
+			}
+		}
+	}
+
+	arch, err := GetNativeArch()
+	if err != nil {
+		t.Errorf("Error in GetNativeArch(): %s", err)
+		return
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Errorf("Error in Getwd(): %s", err)
+		return
+	}
+
+	filter, err := NewFilter(ActAllow)
+	if err != nil {
+		t.Errorf("Error creating filter: %s", err)
+	}
+	defer filter.Release()
+
+	// Seccomp notification is only supported on single-thread filters
+	err = filter.SetTsync(false)
+	if err != nil {
+		t.Errorf("Error setting tsync on filter: %s", err)
+	}
+
+	call, err := GetSyscallFromName("chdir")
+	if err != nil {
+		t.Errorf("Error getting syscall number: %s", err)
+	}
+
+	err = filter.AddRule(call, ActNotify)
+	if err != nil {
+		t.Errorf("Error adding rule to log syscall: %s", err)
+	}
+
+	nonExistentPath, err := syscall.BytePtrFromString("/non-existent-path")
+	if err != nil {
+		t.Errorf("Error converting string: %s", err)
+	}
+	currentWorkingDirectory, err := syscall.BytePtrFromString(cwd)
+	if err != nil {
+		t.Errorf("Error converting string: %s", err)
+	}
+
+	tests := []notifTest{
+		{
+			syscall:     call,
+			args:        [6]uintptr{uintptr(unsafe.Pointer(nonExistentPath)), 0, 0, 0, 0, 0},
+			arch:        arch,
+			respErr:     0,
+			respVal:     0,
+			respFlags:   NotifRespFlagContinue,
+			expectedErr: syscall.ENOENT,
+			expectedVal: ^uint64(0), // -1
+		},
+		{
+			syscall:     call,
+			args:        [6]uintptr{uintptr(unsafe.Pointer(currentWorkingDirectory)), 0, 0, 0, 0, 0},
+			arch:        arch,
+			respErr:     0,
+			respVal:     0,
+			respFlags:   NotifRespFlagContinue,
+			expectedErr: syscall.Errno(0),
+			expectedVal: 0,
+		},
+		{
+			syscall:     call,
+			args:        [6]uintptr{uintptr(unsafe.Pointer(nonExistentPath)), 0, 0, 0, 0, 0},
+			arch:        arch,
+			respErr:     int32(syscall.ENOMEDIUM),
+			respVal:     ^uint64(0), // -1
+			respFlags:   0,
+			expectedErr: syscall.ENOMEDIUM,
+			expectedVal: ^uint64(0), // -1
+		},
+		{
+			syscall:     call,
+			args:        [6]uintptr{uintptr(unsafe.Pointer(currentWorkingDirectory)), 0, 0, 0, 0, 0},
+			arch:        arch,
+			respErr:     int32(syscall.EPIPE),
+			respVal:     ^uint64(0), // -1
+			respFlags:   0,
+			expectedErr: syscall.EPIPE,
+			expectedVal: ^uint64(0), // -1
+		},
+	}
+
+	seccompFdChan := make(chan ScmpFd)
+	errorChan := make(chan error, 2)
+	infoChan := make(chan string)
+	done := make(chan struct{})
+
+	go func() {
+		// Lock this goroutine to it's current kernel thread; otherwise the go runtime may
+		// switch us to a different OS thread, bypassing the seccomp notification filter.
+		runtime.LockOSThread()
+		defer runtime.UnlockOSThread()
+
+		err = filter.Load()
+		if err != nil {
+			t.Errorf("Error loading filter: %s", err)
+		}
+
+		fd, err := filter.GetNotifFd()
+		if err != nil {
+			t.Errorf("Error getting filter notification fd: %s", err)
+		}
+
+		if fd < 3 {
+			t.Errorf("Error in notification fd: want >=3, got %v", fd)
+		}
+		seccompFdChan <- fd
+
+		for i, test := range tests {
+			infoChan <- fmt.Sprintf("Starting test %d", i)
+			r1, r2, err := syscall.Syscall6(syscall.SYS_CHDIR,
+				test.args[0], test.args[1], test.args[2], test.args[3], test.args[4], test.args[5])
+			if err != test.expectedErr || uint64(r1) != test.expectedVal {
+				errorChan <- fmt.Errorf("test #%d: error in syscall: want \"%s\", got \"%s\" (want %v, got r1=%v, r2=%v)",
+					i, test.expectedErr, err, test.expectedVal, r1, r2)
+			}
+			infoChan <- fmt.Sprintf("Test %d completed", i)
+		}
+		done <- struct{}{}
+	}()
+
+	seccompFd := <-seccompFdChan
+	go notifHandler(errorChan, seccompFd, tests)
+
+L:
+	for {
+		select {
+		case <-done:
+			t.Logf("Tests completed")
+			break L
+		case msg := <-infoChan:
+			t.Logf("%s", msg)
+		case err = <-errorChan:
+			if err != nil {
+				t.Errorf("Received error: %s", err.Error())
+				break L
+			}
+		case <-time.After(5 * time.Second):
+			t.Errorf("Timeout during tests")
+			break L
+		}
+	}
+}
+
+// TestNotifUnsupported is checking that the user notify API correctly returns
+// an error when we don't have the proper api level, for example when linking
+// with libseccomp < 2.5.0.
+func TestNotifUnsupported(t *testing.T) {
+	execInSubprocess(t, subprocessNotifUnsupported)
+}
+func subprocessNotifUnsupported(t *testing.T) {
+	// seccomp notification requires API level >= 5
+	api := 0
+	if APILevelIsSupported() {
+		api, err := GetAPI()
+		if err != nil {
+			t.Errorf("Error getting API level: %s", err)
+		} else if api >= 5 {
+			t.Skipf("Skipping test for old libseccomp support: API level %d is >= 5", api)
+		}
+	}
+
+	filter, err := NewFilter(ActAllow)
+	if err != nil {
+		t.Errorf("Error creating filter: %s", err)
+	}
+	defer filter.Release()
+
+	_, err = filter.GetNotifFd()
+	if err == nil {
+		t.Errorf("Error: GetNotifFd was supposed to fail with API level %d", api)
 	}
 }

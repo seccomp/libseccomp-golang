@@ -21,9 +21,9 @@ import (
 // C wrapping code
 
 // #cgo CFLAGS: -I../seccomp/include
-// #cgo LDFLAGS: -L../seccomp/src/.libs -lseccomp
+// #cgo LDFLAGS: -static -L../seccomp/src/.libs -lseccomp
 // #include <stdlib.h>
-// #include "seccomp.h"
+// #include <seccomp.h>
 import "C"
 
 // Exported types
@@ -548,11 +548,12 @@ type ScmpFilter struct {
 	lock      sync.Mutex
 }
 
-// NewFilter creates and returns a new filter context.
-// Accepts a default action to be taken for syscalls which match no rules in
-// the filter.
-// Returns a reference to a valid filter context, or nil and an error if the
-// filter context could not be created or an invalid default action was given.
+// NewFilter creates and returns a new filter context.  Accepts a default action to be
+// taken for syscalls which match no rules in the filter. The newly created filter applies
+// to all threads of the calling process. Use SetTsync() to change this behavior prior to
+// loading the filter.
+// Returns a reference to a valid filter context, or nil and an error
+// if the filter context could not be created or an invalid default action was given.
 func NewFilter(defaultAction ScmpAction) (*ScmpFilter, error) {
 	if err := ensureSupportedVersion(); err != nil {
 		return nil, err
@@ -572,14 +573,35 @@ func NewFilter(defaultAction ScmpAction) (*ScmpFilter, error) {
 	filter.valid = true
 	runtime.SetFinalizer(filter, filterFinalizer)
 
-	// Enable TSync so all goroutines will receive the same rules
-	// If the kernel does not support TSYNC, allow us to continue without error
+	// Enable TSync so all goroutines will receive the same rules.
+	// If the kernel does not support TSYNC, allow us to continue without error.
 	if err := filter.setFilterAttr(filterAttrTsync, 0x1); err != nil && err != syscall.ENOTSUP {
 		filter.Release()
 		return nil, fmt.Errorf("could not create filter - error setting tsync bit: %v", err)
 	}
 
 	return filter, nil
+}
+
+// Sets or clears the filter's thread-sync (TSYNC) attribute. When set, this attribute tells
+// the kernel to synchronize all threads of the calling process to the same seccomp filter.
+// When using filters with the seccomp notification action (ActNotify), the TSYNC attribute
+// must be cleared prior to loading the filter. Refer to the seccomp manual page (seccomp(2)) for
+// further details.
+func (f *ScmpFilter) SetTsync(val bool) error {
+	var cval C.uint32_t
+
+	if val == true {
+		cval = 1
+	} else {
+		cval = 0
+	}
+
+	err := f.setFilterAttr(filterAttrTsync, cval)
+	if err != nil && val == false && err == syscall.ENOTSUP {
+		return nil
+	}
+	return err
 }
 
 // IsValid determines whether a filter context is valid to use.
@@ -1006,7 +1028,7 @@ func (f *ScmpFilter) GetNotifFd() (ScmpFd, error) {
 
 	api, apiErr := getApi()
 	if (apiErr != nil && api == 0) || (apiErr == nil && api < 5) {
-		return -1, fmt.Errorf("the seccomp notification API is only supported in libseccomp 2.4.0 and newer with API level 5 or higher")
+		return -1, fmt.Errorf("seccomp notification requires API level >= 5")
 	}
 
 	fd := C.seccomp_notify_fd(f.filterCtx)

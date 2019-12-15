@@ -89,6 +89,7 @@ const uint32_t C_ACT_ERRNO         = SCMP_ACT_ERRNO(0);
 const uint32_t C_ACT_TRACE         = SCMP_ACT_TRACE(0);
 const uint32_t C_ACT_LOG           = SCMP_ACT_LOG;
 const uint32_t C_ACT_ALLOW         = SCMP_ACT_ALLOW;
+const uint32_t C_ACT_NOTIFY        = SCMP_ACT_NOTIFY;
 
 // The libseccomp SCMP_FLTATR_CTL_LOG member of the scmp_filter_attr enum was
 // added in v2.4.0
@@ -549,6 +550,8 @@ func actionFromNative(a C.uint32_t) (ScmpAction, error) {
 		return ActLog, nil
 	case C.C_ACT_ALLOW:
 		return ActAllow, nil
+	case C.C_ACT_NOTIFY:
+		return ActNotify, nil
 	default:
 		return 0x0, fmt.Errorf("unrecognized action %#x", uint32(a))
 	}
@@ -573,6 +576,8 @@ func (a ScmpAction) toNative() C.uint32_t {
 		return C.C_ACT_LOG
 	case ActAllow:
 		return C.C_ACT_ALLOW
+	case ActNotify:
+		return C.C_ACT_NOTIFY
 	default:
 		return 0x0
 	}

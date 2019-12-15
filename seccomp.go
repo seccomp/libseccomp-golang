@@ -79,6 +79,12 @@ type ScmpSyscall int32
 type ScmpFd int32
 
 // ScmpNotifData describes the system call context that triggered a notification.
+//
+// Syscall:      the syscall number
+// Arch:         the filter architecture
+// InstrPointer: address of the instruction that triggered a notification
+// Args:         arguments (up to 6) for the syscall
+//
 type ScmpNotifData struct {
 	Syscall      ScmpSyscall `json:"syscall,omitempty"`
 	Arch         ScmpArch    `json:"arch,omitempty"`
@@ -87,7 +93,13 @@ type ScmpNotifData struct {
 }
 
 // ScmpNotifReq represents a seccomp userspace notification. See NotifReceive() for
-// further details.
+// info on how to pull such a notification.
+//
+// Id:    notification ID
+// Pid:   process that triggered the notification event
+// Flags: filter flags (see seccomp(2))
+// Data:  system call context that triggered the notification
+//
 type ScmpNotifReq struct {
 	Id    uint64        `json:"id,omitempty"`
 	Pid   uint32        `json:"pid,omitempty"`
@@ -96,11 +108,20 @@ type ScmpNotifReq struct {
 }
 
 // ScmpNotifResp represents a seccomp userspace notification response. See NotifRespond()
-// for further details.
+// for info on how to push such a response.
+//
+// Id:    notification ID (must match the corresponding ScmpNotifReq Id)
+// Error: must be 0 if no error occurred, or an error constant from package
+//        syscall (e.g., syscall.EPERM, etc). In the latter case, it's used
+//        as an error return from the syscall that created the notification.
+// Val:   return value for the syscall that created the notification. Only
+//        relevant if Error is 0.
+// Flags: userspace notification response flag (e.g., NotifRespFlagContinue)
+//
 type ScmpNotifResp struct {
 	Id    uint64 `json:"id,omitempty"`
-	Val   uint64 `json:"val,omitempty"`
 	Error int32  `json:"error,omitempty"`
+	Val   uint64 `json:"val,omitempty"`
 	Flags uint32 `json:"flags,omitempty"`
 }
 
@@ -1062,8 +1083,8 @@ func NotifReceive(fd ScmpFd) (*ScmpNotifReq, error) {
 	return notifReqFromNative(req)
 }
 
-// NotifRespond responds to a notification retrieved via NotifReceive. The response Id
-// must match that of an outstanding notification retrieved via NotifReceive.
+// NotifRespond responds to a notification retrieved via NotifReceive(). The response Id
+// must match that of the corresponding notification retrieved via NotifReceive().
 func NotifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 	var req *C.struct_seccomp_notif
 	var resp *C.struct_seccomp_notif_resp
@@ -1089,8 +1110,7 @@ func NotifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 
 // NotifIdValid checks if a notification is still valid. An return value of nil means the
 // notification is still valid. Otherwise the notification is not valid. This can be used
-// to mitigate time-of-check-time-of-use (TOCTOU) attacks by ensuring a notification is
-// valid just before responding to it.
+// to mitigate time-of-check-time-of-use (TOCTOU) attacks as described in seccomp_notify_id_valid(2).
 func NotifIdValid(fd ScmpFd, id uint64) error {
 	if retCode := C.seccomp_notify_id_valid(C.int(fd), C.uint64_t(id)); retCode != 0 {
 		return errRc(retCode)

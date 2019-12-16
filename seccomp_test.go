@@ -5,9 +5,14 @@
 package seccomp
 
 import (
+	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 	"syscall"
 	"testing"
+	"unsafe"
 )
 
 // Type Function Tests
@@ -525,6 +530,7 @@ func TestMergeFilters(t *testing.T) {
 }
 
 func TestRuleAddAndLoad(t *testing.T) {
+
 	// Test #1: Add a trivial filter
 	filter1, err := NewFilter(ActAllow)
 	if err != nil {
@@ -669,5 +675,191 @@ func TestCreateActKillProcessFilter(t *testing.T) {
 
 	if !filter.IsValid() {
 		t.Errorf("Filter created by NewFilter was not valid")
+	}
+}
+
+//
+// Seccomp notification tests
+//
+
+// notifTest describes a seccomp notification test
+type notifTest struct {
+	syscall    ScmpSyscall
+	args       []string
+	arch       ScmpArch
+	respErr    int32
+	respVal    uint64
+	respFlags  uint32
+	syscallRet error
+}
+
+// charPtrToStr retrives the string pointer to by arg
+func charPtrToStr(ptr uint64) string {
+	var buf bytes.Buffer
+	var uptr unsafe.Pointer
+
+	for i := 0; i < 1024; i++ {
+		uptr = unsafe.Pointer(uintptr(ptr + uint64(i)))
+		b := *((*byte)(uptr))
+		if b == '\x00' {
+			break
+		}
+		buf.WriteByte(b)
+	}
+	return buf.String()
+}
+
+// notifHandler handles seccomp notifications and responses
+func notifHandler(ch chan error, fd ScmpFd, tests []notifTest) {
+
+	for _, test := range tests {
+
+		req, err := NotifReceive(fd)
+		if err != nil {
+			ch <- fmt.Errorf("Error in NotifReceive(): %s", err)
+			return
+		}
+
+		if req.Data.Syscall != test.syscall {
+			want, _ := test.syscall.GetName()
+			got, _ := req.Data.Syscall.GetName()
+			ch <- fmt.Errorf("Error in notification request syscall: got %s, want %s", got, want)
+			return
+		}
+
+		if req.Data.Arch != test.arch {
+			ch <- fmt.Errorf("Error in notification request arch: got %s, want %s", req.Data.Arch, test.arch)
+			return
+		}
+
+		for i, arg := range test.args {
+			reqArg := charPtrToStr(req.Data.Args[i])
+			if arg != reqArg {
+				ch <- fmt.Errorf("Error in syscall arg[%d]: got %s, want %s", i, reqArg, arg)
+				return
+			}
+		}
+
+		// TOCTOU check
+		if err := NotifIdValid(fd, req.Id); err != nil {
+			ch <- fmt.Errorf("TOCTOU check failed: req.Id is no longer valid: %s\n", err)
+			return
+		}
+
+		resp := &ScmpNotifResp{
+			Id:    req.Id,
+			Error: test.respErr,
+			Val:   test.respVal,
+			Flags: test.respFlags,
+		}
+
+		if err = NotifRespond(fd, resp); err != nil {
+			ch <- fmt.Errorf("Error in notification response: %s", err)
+			return
+		}
+
+		ch <- nil
+	}
+}
+
+func TestNotif(t *testing.T) {
+
+	// seccomp notification requires API level >= 5
+	api, err := GetApi()
+	if err != nil {
+		t.Errorf("Error getting API level: %s", err)
+	} else if api < 5 {
+		err = SetApi(5)
+		if err != nil {
+			t.Errorf("Error setting API level to 5: %s", err)
+			return
+		}
+	}
+
+	arch, err := GetNativeArch()
+	if err != nil {
+		t.Errorf("Error in GetNativeArch(): %s", err)
+		return
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Errorf("Error in Getwd(): %s", err)
+		return
+	}
+
+	filter, err := NewFilter(ActAllow)
+	if err != nil {
+		t.Errorf("Error creating filter: %s", err)
+	}
+	defer filter.Release()
+
+	// Seccomp notification is only supported on single-thread filters
+	err = filter.SetTsync(false)
+	if err != nil {
+		t.Errorf("Error setting tsync on filter: %s", err)
+	}
+
+	// Lock this goroutine to it's current kernel thread; otherwise the go runtime may
+	// switch us to a different OS thread, bypassing the seccomp notification filter.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	call, err := GetSyscallFromName("mount")
+	if err != nil {
+		t.Errorf("Error getting syscall number: %s", err)
+	}
+
+	err = filter.AddRule(call, ActNotify)
+	if err != nil {
+		t.Errorf("Error adding rule to log syscall: %s", err)
+	}
+
+	err = filter.Load()
+	if err != nil {
+		t.Errorf("Error loading filter: %s", err)
+	}
+
+	fd, err := filter.GetNotifFd()
+	if err != nil {
+		t.Errorf("Error getting filter notification fd: %s", err)
+	}
+
+	if fd < 3 {
+		t.Errorf("Error in notification fd: want 0, got %v", fd)
+	}
+
+	tests := []notifTest{
+		{
+			syscall:    call,
+			args:       []string{"procfs", filepath.Join(cwd, "procfs"), "procfs"},
+			arch:       arch,
+			respErr:    0,
+			respVal:    0,
+			respFlags:  0,
+			syscallRet: nil,
+		},
+		{
+			syscall:    call,
+			args:       []string{"procfs", filepath.Join(cwd, "procfs2"), "procfs"},
+			arch:       arch,
+			respErr:    0,
+			respVal:    0,
+			respFlags:  NotifRespFlagContinue,
+			syscallRet: syscall.ENOENT,
+		},
+	}
+
+	ch := make(chan error)
+	go notifHandler(ch, fd, tests)
+
+	for _, test := range tests {
+		if err := syscall.Mount(test.args[0], test.args[1], test.args[2], 0, ""); err != test.syscallRet {
+			t.Errorf("Error in syscall: want \"%s\", got \"%s\"\n", test.syscallRet, err)
+		}
+		err = <-ch
+		if err != nil {
+			t.Errorf(err.Error())
+		}
 	}
 }

@@ -641,6 +641,6 @@ func notifReqFromNative(req *C.struct_seccomp_notif) (*ScmpNotifReq, error) {
 func (scmpResp *ScmpNotifResp) toNative(resp *C.struct_seccomp_notif_resp) {
 	resp.id = C.__u64(scmpResp.Id)
 	resp.val = C.__s64(scmpResp.Val)
-	resp.error = C.__s32(scmpResp.Error)
+	resp.error = (C.__s32(scmpResp.Error) * -1) // kernel requires a negated value
 	resp.flags = C.__u32(scmpResp.Flags)
 }

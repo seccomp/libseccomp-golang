@@ -15,7 +15,7 @@ import (
 // Need stdlib.h for free() on cstrings
 
 // #cgo CFLAGS: -I../seccomp/include
-// #cgo LDFLAGS: -static -L../seccomp/src/.libs -lseccomp
+// #cgo LDFLAGS: -L../seccomp/src/.libs -l:libseccomp.a
 /*
 #include <errno.h>
 #include <stdlib.h>

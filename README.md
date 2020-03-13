@@ -1,6 +1,8 @@
-![Enhanced Seccomp Helper Library](https://github.com/seccomp/libseccomp-artwork/blob/master/logo/libseccomp-color_text.png)
+![libseccomp Golang Bindings](https://github.com/seccomp/libseccomp-artwork/blob/master/logo/libseccomp-color_text.png)
 ===============================================================================
-libseccomp-golang: Go Language Bindings for the libseccomp Project
+https://github.com/seccomp/libseccomp-golang
+
+[![Build Status](https://img.shields.io/travis/seccomp/libseccomp-golang/master.svg)](https://travis-ci.org/seccomp/libseccomp-golang)
 
 The libseccomp library provides an easy to use, platform independent, interface
 to the Linux Kernel's syscall filtering mechanism.  The libseccomp API is

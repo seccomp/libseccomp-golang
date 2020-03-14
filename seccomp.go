@@ -345,23 +345,23 @@ func GetLibraryVersion() (major, minor, micro uint) {
 	return verMajor, verMinor, verMicro
 }
 
-// GetApi returns the API level supported by the system.
+// GetAPI returns the API level supported by the system.
 // Returns a positive int containing the API level, or 0 with an error if the
 // API level could not be detected due to the library being older than v2.4.0.
 // See the seccomp_api_get(3) man page for details on available API levels:
 // https://github.com/seccomp/libseccomp/blob/master/doc/man/man3/seccomp_api_get.3
-func GetApi() (uint, error) {
-	return getApi()
+func GetAPI() (uint, error) {
+	return getAPI()
 }
 
-// SetApi forcibly sets the API level. General use of this function is strongly
+// SetAPI forcibly sets the API level. General use of this function is strongly
 // discouraged.
 // Returns an error if the API level could not be set. An error is always
 // returned if the library is older than v2.4.0
 // See the seccomp_api_get(3) man page for details on available API levels:
 // https://github.com/seccomp/libseccomp/blob/master/doc/man/man3/seccomp_api_get.3
-func SetApi(api uint) error {
-	return setApi(api)
+func SetAPI(api uint) error {
+	return setAPI(api)
 }
 
 // Syscall functions
@@ -611,11 +611,11 @@ func (f *ScmpFilter) Merge(src *ScmpFilter) error {
 
 	// Merge the filters
 	if retCode := C.seccomp_merge(f.filterCtx, src.filterCtx); retCode != 0 {
-		if e := errRc(retCode); e == syscall.EINVAL {
+		e := errRc(retCode)
+		if e == syscall.EINVAL {
 			return fmt.Errorf("filters could not be merged due to a mismatch in attributes or invalid filter")
-		} else {
-			return e
 		}
+		return e
 	}
 
 	src.valid = false
@@ -645,12 +645,12 @@ func (f *ScmpFilter) IsArchPresent(arch ScmpArch) (bool, error) {
 	}
 
 	if retCode := C.seccomp_arch_exist(f.filterCtx, arch.toNative()); retCode != 0 {
-		if e := errRc(retCode); e == syscall.EEXIST {
+		e := errRc(retCode)
+		if e == syscall.EEXIST {
 			// -EEXIST is "arch not present"
 			return false, nil
-		} else {
-			return false, e
 		}
+		return false, e
 	}
 
 	return true, nil
@@ -778,7 +778,7 @@ func (f *ScmpFilter) GetNoNewPrivsBit() (bool, error) {
 func (f *ScmpFilter) GetLogBit() (bool, error) {
 	log, err := f.getFilterAttr(filterAttrLog)
 	if err != nil {
-		api, apiErr := getApi()
+		api, apiErr := getAPI()
 		if (apiErr != nil && api == 0) || (apiErr == nil && api < 3) {
 			return false, fmt.Errorf("getting the log bit is only supported in libseccomp 2.4.0 and newer with API level 3 or higher")
 		}
@@ -832,7 +832,7 @@ func (f *ScmpFilter) SetLogBit(state bool) error {
 
 	err := f.setFilterAttr(filterAttrLog, toSet)
 	if err != nil {
-		api, apiErr := getApi()
+		api, apiErr := getAPI()
 		if (apiErr != nil && api == 0) || (apiErr == nil && api < 3) {
 			return fmt.Errorf("setting the log bit is only supported in libseccomp 2.4.0 and newer with API level 3 or higher")
 		}

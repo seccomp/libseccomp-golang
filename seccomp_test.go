@@ -64,15 +64,15 @@ func TestVersionError(t *testing.T) {
 	}
 }
 
-func ApiLevelIsSupported() bool {
+func APILevelIsSupported() bool {
 	return verMajor > 2 ||
 		(verMajor == 2 && verMinor > 3) ||
 		(verMajor == 2 && verMinor == 3 && verMicro >= 3)
 }
 
-func TestGetApiLevel(t *testing.T) {
-	api, err := GetApi()
-	if !ApiLevelIsSupported() {
+func TestGetAPILevel(t *testing.T) {
+	api, err := GetAPI()
+	if !APILevelIsSupported() {
 		if api != 0 {
 			t.Errorf("API level returned despite lack of support: %v", api)
 		} else if err == nil {
@@ -86,12 +86,12 @@ func TestGetApiLevel(t *testing.T) {
 	fmt.Printf("Got API level of %v\n", api)
 }
 
-func TestSetApiLevel(t *testing.T) {
-	var expectedApi uint
+func TestSetAPILevel(t *testing.T) {
+	var expectedAPI uint
 
-	expectedApi = 1
-	err := SetApi(expectedApi)
-	if !ApiLevelIsSupported() {
+	expectedAPI = 1
+	err := SetAPI(expectedAPI)
+	if !APILevelIsSupported() {
 		if err == nil {
 			t.Errorf("No error returned despite lack of API level support")
 		}
@@ -101,11 +101,11 @@ func TestSetApiLevel(t *testing.T) {
 		t.Errorf("Error setting API level: %s", err)
 	}
 
-	api, err := GetApi()
+	api, err := GetAPI()
 	if err != nil {
 		t.Errorf("Error getting API level: %s", err)
-	} else if api != expectedApi {
-		t.Errorf("Got API level %v: expected %v", api, expectedApi)
+	} else if api != expectedAPI {
+		t.Errorf("Got API level %v: expected %v", api, expectedAPI)
 	}
 }
 
@@ -432,12 +432,12 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 		t.Errorf("No new privileges bit was not set correctly")
 	}
 
-	if ApiLevelIsSupported() {
-		api, err := GetApi()
+	if APILevelIsSupported() {
+		api, err := GetAPI()
 		if err != nil {
 			t.Errorf("Error getting API level: %s", err)
 		} else if api < 3 {
-			err = SetApi(3)
+			err = SetAPI(3)
 			if err != nil {
 				t.Errorf("Error setting API level: %s", err)
 			}
@@ -446,7 +446,7 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 
 	err = filter.SetLogBit(true)
 	if err != nil {
-		if !ApiLevelIsSupported() {
+		if !APILevelIsSupported() {
 			t.Logf("Ignoring failure: %s\n", err)
 		} else {
 			t.Errorf("Error setting log bit")
@@ -455,7 +455,7 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 
 	log, err := filter.GetLogBit()
 	if err != nil {
-		if !ApiLevelIsSupported() {
+		if !APILevelIsSupported() {
 			t.Logf("Ignoring failure: %s\n", err)
 		} else {
 			t.Errorf("Error getting log bit")
@@ -600,9 +600,9 @@ func TestRuleAddAndLoad(t *testing.T) {
 func TestLogAct(t *testing.T) {
 	expectedPid := syscall.Getpid()
 
-	api, err := GetApi()
+	api, err := GetAPI()
 	if err != nil {
-		if !ApiLevelIsSupported() {
+		if !APILevelIsSupported() {
 			t.Skipf("Skipping test: %s", err)
 		}
 
@@ -681,9 +681,9 @@ func TestCreateActKillThreadFilter(t *testing.T) {
 }
 
 func TestCreateActKillProcessFilter(t *testing.T) {
-	api, err := GetApi()
+	api, err := GetAPI()
 	if err != nil {
-		if !ApiLevelIsSupported() {
+		if !APILevelIsSupported() {
 			t.Skipf("Skipping test: %s", err)
 		}
 

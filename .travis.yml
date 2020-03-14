@@ -29,4 +29,5 @@ addons:
 
 # run all of the tests independently, fail if any of the tests error
 script:
+  - make check-syntax
   - make check

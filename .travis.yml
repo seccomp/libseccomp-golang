@@ -27,7 +27,11 @@ addons:
       - libseccomp2
       - libseccomp-dev
 
+install:
+  - go get -u golang.org/x/lint/golint
+
 # run all of the tests independently, fail if any of the tests error
 script:
   - make check-syntax
+  - make lint
   - make check

@@ -246,7 +246,7 @@ func ensureSupportedVersion() error {
 }
 
 // Get the API level
-func getApi() (uint, error) {
+func getAPI() (uint, error) {
 	api := C.seccomp_api_get()
 	if api == 0 {
 		return 0, fmt.Errorf("API level operations are not supported")
@@ -256,7 +256,7 @@ func getApi() (uint, error) {
 }
 
 // Set the API level
-func setApi(api uint) error {
+func setAPI(api uint) error {
 	if retCode := C.seccomp_api_set(C.uint(api)); retCode != 0 {
 		if errRc(retCode) == syscall.EOPNOTSUPP {
 			return fmt.Errorf("API level operations are not supported")

@@ -1,4 +1,4 @@
-![libseccomp Golang Bindings](https://github.com/seccomp/libseccomp-artwork/blob/master/logo/libseccomp-color_text.png)
+![libseccomp Golang Bindings](https://github.com/seccomp/libseccomp-artwork/blob/main/logo/libseccomp-color_text.png)
 ===============================================================================
 https://github.com/seccomp/libseccomp-golang
 

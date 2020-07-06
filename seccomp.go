@@ -110,7 +110,7 @@ type ScmpNotifData struct {
 // Data:  system call context that triggered the notification
 //
 type ScmpNotifReq struct {
-	Id    uint64        `json:"id,omitempty"`
+	ID    uint64        `json:"id,omitempty"`
 	Pid   uint32        `json:"pid,omitempty"`
 	Flags uint32        `json:"flags,omitempty"`
 	Data  ScmpNotifData `json:"data,omitempty"`
@@ -128,7 +128,7 @@ type ScmpNotifReq struct {
 // Flags: userspace notification response flag (e.g., NotifRespFlagContinue)
 //
 type ScmpNotifResp struct {
-	Id    uint64 `json:"id,omitempty"`
+	ID    uint64 `json:"id,omitempty"`
 	Error int32  `json:"error,omitempty"`
 	Val   uint64 `json:"val,omitempty"`
 	Flags uint32 `json:"flags,omitempty"`
@@ -249,8 +249,9 @@ const (
 const (
 	// Userspace notification response flags
 
-	// Tells the kernel to continue executing the system call that triggered the
-	// notification. Must only be used when the notication response's error is 0.
+	// NotifRespFlagContinue tells the kernel to continue executing the system
+	// call that triggered the notification. Must only be used when the notication
+	// response's error is 0.
 	NotifRespFlagContinue uint32 = 1
 )
 
@@ -425,8 +426,8 @@ func GetLibraryVersion() (major, minor, micro uint) {
 // API level could not be detected due to the library being older than v2.4.0.
 // See the seccomp_api_get(3) man page for details on available API levels:
 // https://github.com/seccomp/libseccomp/blob/master/doc/man/man3/seccomp_api_get.3
-func GetApi() (uint, error) {
-	api, err := getApi()
+func GetAPI() (uint, error) {
+	api, err := getAPI()
 	if err != nil {
 		return api, err
 	}
@@ -440,8 +441,8 @@ func GetApi() (uint, error) {
 // returned if the library is older than v2.4.0
 // See the seccomp_api_get(3) man page for details on available API levels:
 // https://github.com/seccomp/libseccomp/blob/master/doc/man/man3/seccomp_api_get.3
-func SetApi(api uint) error {
-	if err := setApi(api); err != nil {
+func SetAPI(api uint) error {
+	if err := setAPI(api); err != nil {
 		return err
 	}
 	apiLevel = api
@@ -625,8 +626,8 @@ func NewFilter(defaultAction ScmpAction) (*ScmpFilter, error) {
 	return filter, nil
 }
 
-// Sets or clears the filter's thread-sync (TSYNC) attribute. When set, this attribute tells
-// the kernel to synchronize all threads of the calling process to the same seccomp filter.
+// SetTsync sets or clears the filter's thread-sync (TSYNC) attribute. When set, this attribute
+// tells the kernel to synchronize all threads of the calling process to the same seccomp filter.
 // When using filters with the seccomp notification action (ActNotify), the TSYNC attribute
 // must be cleared prior to loading the filter. Refer to the seccomp manual page (seccomp(2)) for
 // further details.
@@ -1135,10 +1136,10 @@ func NotifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 	return nil
 }
 
-// NotifIdValid checks if a notification is still valid. An return value of nil means the
+// NotifIDValid checks if a notification is still valid. An return value of nil means the
 // notification is still valid. Otherwise the notification is not valid. This can be used
 // to mitigate time-of-check-time-of-use (TOCTOU) attacks as described in seccomp_notify_id_valid(2).
-func NotifIdValid(fd ScmpFd, id uint64) error {
+func NotifIDValid(fd ScmpFd, id uint64) error {
 	if apiLevel < 5 {
 		return fmt.Errorf("seccomp notification requires API level >= 5; current level = %d", apiLevel)
 	}

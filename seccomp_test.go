@@ -742,7 +742,7 @@ func notifHandler(ch chan error, fd ScmpFd, tests []notifTest) {
 
 		// TOCTOU check
 		if err := NotifIdValid(fd, req.Id); err != nil {
-			ch <- fmt.Errorf("TOCTOU check failed: req.Id is no longer valid: %s\n", err)
+			ch <- fmt.Errorf("TOCTOU check failed: req.Id is no longer valid: %s", err)
 			return
 		}
 

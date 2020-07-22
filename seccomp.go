@@ -793,6 +793,30 @@ func (f *ScmpFilter) GetLogBit() (bool, error) {
 	return true, nil
 }
 
+// GetSSB returns the current state the SSB bit will be set to on the filter
+// being loaded, or an error if an issue was encountered retrieving the value.
+// The SSB bit tells the kernel that a seccomp user is not interested in enabling
+// Speculative Store Bypass mitigation.
+// The SSB bit is only usable when libseccomp API level 4 or higher is
+// supported.
+func (f *ScmpFilter) GetSSB() (bool, error) {
+	ssb, err := f.getFilterAttr(filterAttrSSB)
+	if err != nil {
+		api, apiErr := getAPI()
+		if (apiErr != nil && api == 0) || (apiErr == nil && api < 4) {
+			return false, fmt.Errorf("getting the SSB flag is only supported in libseccomp 2.5.0 and newer with API level 4 or higher")
+		}
+
+		return false, err
+	}
+
+	if ssb == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 // SetBadArchAction sets the default action taken on a syscall for an
 // architecture not in the filter, or an error if an issue was encountered
 // setting the value.
@@ -835,6 +859,28 @@ func (f *ScmpFilter) SetLogBit(state bool) error {
 		api, apiErr := getAPI()
 		if (apiErr != nil && api == 0) || (apiErr == nil && api < 3) {
 			return fmt.Errorf("setting the log bit is only supported in libseccomp 2.4.0 and newer with API level 3 or higher")
+		}
+	}
+
+	return err
+}
+
+// SetSSB sets the state of the SSB bit, which will be applied on filter
+// load, or an error if an issue was encountered setting the value.
+// The SSB bit is only usable when libseccomp API level 4 or higher is
+// supported.
+func (f *ScmpFilter) SetSSB(state bool) error {
+	var toSet C.uint32_t = 0x0
+
+	if state {
+		toSet = 0x1
+	}
+
+	err := f.setFilterAttr(filterAttrSSB, toSet)
+	if err != nil {
+		api, apiErr := getAPI()
+		if (apiErr != nil && api == 0) || (apiErr == nil && api < 4) {
+			return fmt.Errorf("setting the SSB flag is only supported in libseccomp 2.5.0 and newer with API level 4 or higher")
 		}
 	}
 

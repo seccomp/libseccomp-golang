@@ -94,6 +94,8 @@ const uint32_t C_ACT_ALLOW         = SCMP_ACT_ALLOW;
 #if (SCMP_VER_MAJOR < 2) || \
     (SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 4)
 #define SCMP_FLTATR_CTL_LOG _SCMP_FLTATR_MIN
+#elif SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 5
+#define SCMP_FLTATR_CTL_SSB _SCMP_FLTATR_MIN
 #endif
 
 const uint32_t C_ATTRIBUTE_DEFAULT = (uint32_t)SCMP_FLTATR_ACT_DEFAULT;
@@ -101,6 +103,7 @@ const uint32_t C_ATTRIBUTE_BADARCH = (uint32_t)SCMP_FLTATR_ACT_BADARCH;
 const uint32_t C_ATTRIBUTE_NNP     = (uint32_t)SCMP_FLTATR_CTL_NNP;
 const uint32_t C_ATTRIBUTE_TSYNC   = (uint32_t)SCMP_FLTATR_CTL_TSYNC;
 const uint32_t C_ATTRIBUTE_LOG     = (uint32_t)SCMP_FLTATR_CTL_LOG;
+const uint32_t C_ATTRIBUTE_SSB     = (uint32_t)SCMP_FLTATR_CTL_SSB;
 
 const int      C_CMP_NE            = (int)SCMP_CMP_NE;
 const int      C_CMP_LT            = (int)SCMP_CMP_LT;
@@ -203,6 +206,7 @@ const (
 	filterAttrNNP        scmpFilterAttr = iota
 	filterAttrTsync      scmpFilterAttr = iota
 	filterAttrLog        scmpFilterAttr = iota
+	filterAttrSSB        scmpFilterAttr = iota
 )
 
 const (
@@ -590,6 +594,8 @@ func (a scmpFilterAttr) toNative() uint32 {
 		return uint32(C.C_ATTRIBUTE_TSYNC)
 	case filterAttrLog:
 		return uint32(C.C_ATTRIBUTE_LOG)
+	case filterAttrSSB:
+		return uint32(C.C_ATTRIBUTE_SSB)
 	default:
 		return 0x0
 	}

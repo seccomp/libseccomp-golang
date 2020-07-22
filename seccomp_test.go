@@ -464,6 +464,36 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 		t.Errorf("Log bit was not set correctly")
 	}
 
+	api, err := GetAPI()
+	if err != nil {
+		t.Errorf("Error getting API level: %s", err)
+	} else if api < 4 {
+		err = SetAPI(4)
+		if err != nil {
+			t.Skipf("Skipping test: API level %d is less than 4", api)
+		}
+	}
+
+	err = filter.SetSSB(true)
+	if err != nil {
+		if !APILevelIsSupported() {
+			t.Logf("Ignoring failure: %s\n", err)
+		} else {
+			t.Errorf("Error setting SSB bit")
+		}
+	}
+
+	ssb, err := filter.GetSSB()
+	if err != nil {
+		if !APILevelIsSupported() {
+			t.Logf("Ignoring failure: %s\n", err)
+		} else {
+			t.Errorf("Error getting SSB bit")
+		}
+	} else if ssb != true {
+		t.Errorf("SSB bit was not set correctly")
+	}
+
 	err = filter.SetBadArchAction(ActInvalid)
 	if err == nil {
 		t.Errorf("Setting bad arch action to an invalid action should error")

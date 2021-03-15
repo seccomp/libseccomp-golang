@@ -186,6 +186,8 @@ const (
 )
 
 var (
+	// ErrSyscallDoesNotExist represents an error condition where
+	// libseccomp is unable to resolve the syscall
 	ErrSyscallDoesNotExist = fmt.Errorf("could not resolve syscall name")
 )
 

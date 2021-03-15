@@ -185,6 +185,10 @@ const (
 	CompareMaskedEqual ScmpCompareOp = iota
 )
 
+var (
+	ErrSyscallDoesNotExist = fmt.Errorf("could not resolve syscall name")
+)
+
 // Helpers for types
 
 // GetArchFromString returns an ScmpArch constant from a string representing an
@@ -398,7 +402,7 @@ func (s ScmpSyscall) GetNameByArch(arch ScmpArch) (string, error) {
 
 	cString := C.seccomp_syscall_resolve_num_arch(arch.toNative(), C.int(s))
 	if cString == nil {
-		return "", fmt.Errorf("could not resolve syscall name for %#x", int32(s))
+		return "", ErrSyscallDoesNotExist
 	}
 	defer C.free(unsafe.Pointer(cString))
 
@@ -421,7 +425,7 @@ func GetSyscallFromName(name string) (ScmpSyscall, error) {
 
 	result := C.seccomp_syscall_resolve_name(cString)
 	if result == scmpError {
-		return 0, fmt.Errorf("could not resolve name to syscall: %q", name)
+		return 0, ErrSyscallDoesNotExist
 	}
 
 	return ScmpSyscall(result), nil
@@ -445,7 +449,7 @@ func GetSyscallFromNameByArch(name string, arch ScmpArch) (ScmpSyscall, error) {
 
 	result := C.seccomp_syscall_resolve_name_arch(arch.toNative(), cString)
 	if result == scmpError {
-		return 0, fmt.Errorf("could not resolve name to syscall: %q on %v", name, arch)
+		return 0, ErrSyscallDoesNotExist
 	}
 
 	return ScmpSyscall(result), nil

@@ -41,9 +41,6 @@ type VersionError struct {
 	minimum string
 }
 
-// Caches the libseccomp API level
-var apiLevel uint
-
 func init() {
 	// This forces the cgo libseccomp to initialize its internal API support state,
 	// which is necessary on older versions of libseccomp in order to work
@@ -451,12 +448,7 @@ func GetLibraryVersion() (major, minor, micro uint) {
 // See the seccomp_api_get(3) man page for details on available API levels:
 // https://github.com/seccomp/libseccomp/blob/main/doc/man/man3/seccomp_api_get.3
 func GetAPI() (uint, error) {
-	api, err := getAPI()
-	if err != nil {
-		return api, err
-	}
-	apiLevel = api
-	return api, err
+	return getAPI()
 }
 
 // SetAPI forcibly sets the API level. General use of this function is strongly
@@ -466,11 +458,7 @@ func GetAPI() (uint, error) {
 // See the seccomp_api_get(3) man page for details on available API levels:
 // https://github.com/seccomp/libseccomp/blob/main/doc/man/man3/seccomp_api_get.3
 func SetAPI(api uint) error {
-	if err := setAPI(api); err != nil {
-		return err
-	}
-	apiLevel = api
-	return nil
+	return setAPI(api)
 }
 
 // Syscall functions
@@ -909,6 +897,8 @@ func (f *ScmpFilter) GetNoNewPrivsBit() (bool, error) {
 func (f *ScmpFilter) GetLogBit() (bool, error) {
 	log, err := f.getFilterAttr(filterAttrLog)
 	if err != nil {
+		// Ignore error, if not supported returns apiLevel == 0
+		apiLevel, _ := GetAPI()
 		if apiLevel < 3 {
 			return false, fmt.Errorf("getting the log bit is only supported in libseccomp 2.4.0 and newer with API level 3 or higher")
 		}
@@ -986,6 +976,8 @@ func (f *ScmpFilter) SetLogBit(state bool) error {
 
 	err := f.setFilterAttr(filterAttrLog, toSet)
 	if err != nil {
+		// Ignore error, if not supported returns apiLevel == 0
+		apiLevel, _ := GetAPI()
 		if apiLevel < 3 {
 			return fmt.Errorf("setting the log bit is only supported in libseccomp 2.4.0 and newer with API level 3 or higher")
 		}

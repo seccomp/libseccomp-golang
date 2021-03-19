@@ -735,6 +735,8 @@ func (f *ScmpFilter) getNotifFd() (ScmpFd, error) {
 		return -1, errBadFilter
 	}
 
+	// Ignore error, if not supported returns apiLevel == 0
+	apiLevel, _ := GetAPI()
 	if apiLevel < 5 {
 		return -1, fmt.Errorf("seccomp notification requires API level >= 5; current level = %d", apiLevel)
 	}
@@ -748,6 +750,8 @@ func notifReceive(fd ScmpFd) (*ScmpNotifReq, error) {
 	var req *C.struct_seccomp_notif
 	var resp *C.struct_seccomp_notif_resp
 
+	// Ignore error, if not supported returns apiLevel == 0
+	apiLevel, _ := GetAPI()
 	if apiLevel < 5 {
 		return nil, fmt.Errorf("seccomp notification requires API level >= 5; current level = %d", apiLevel)
 	}
@@ -772,6 +776,8 @@ func notifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 	var req *C.struct_seccomp_notif
 	var resp *C.struct_seccomp_notif_resp
 
+	// Ignore error, if not supported returns apiLevel == 0
+	apiLevel, _ := GetAPI()
 	if apiLevel < 5 {
 		return fmt.Errorf("seccomp notification requires API level >= 5; current level = %d", apiLevel)
 	}
@@ -795,6 +801,8 @@ func notifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 }
 
 func notifIDValid(fd ScmpFd, id uint64) error {
+	// Ignore error, if not supported returns apiLevel == 0
+	apiLevel, _ := GetAPI()
 	if apiLevel < 5 {
 		return fmt.Errorf("seccomp notification requires API level >= 5; current level = %d", apiLevel)
 	}

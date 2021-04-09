@@ -765,7 +765,20 @@ func notifReceive(fd ScmpFd) (*ScmpNotifReq, error) {
 		C.seccomp_notify_free(req, resp)
 	}()
 
-	if retCode := C.seccomp_notify_receive(C.int(fd), req); retCode != 0 {
+	for {
+		retCode, errno := C.seccomp_notify_receive(C.int(fd), req)
+		if retCode == 0 {
+			break
+		}
+
+		if errno == syscall.EINTR {
+			continue
+		}
+
+		if errno == syscall.ENOENT {
+			return nil, errno
+		}
+
 		return nil, errRc(retCode)
 	}
 
@@ -793,7 +806,20 @@ func notifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 
 	scmpResp.toNative(resp)
 
-	if retCode := C.seccomp_notify_respond(C.int(fd), resp); retCode != 0 {
+	for {
+		retCode, errno := C.seccomp_notify_respond(C.int(fd), resp)
+		if retCode == 0 {
+			break
+		}
+
+		if errno == syscall.EINTR {
+			continue
+		}
+
+		if errno == syscall.ENOENT {
+			return errno
+		}
+
 		return errRc(retCode)
 	}
 
@@ -807,8 +833,22 @@ func notifIDValid(fd ScmpFd, id uint64) error {
 		return fmt.Errorf("seccomp notification requires API level >= 6; current level = %d", apiLevel)
 	}
 
-	if retCode := C.seccomp_notify_id_valid(C.int(fd), C.uint64_t(id)); retCode != 0 {
+	for {
+		retCode, errno := C.seccomp_notify_id_valid(C.int(fd), C.uint64_t(id))
+		if retCode == 0 {
+			break
+		}
+
+		if errno == syscall.EINTR {
+			continue
+		}
+
+		if errno == syscall.ENOENT {
+			return errno
+		}
+
 		return errRc(retCode)
 	}
+
 	return nil
 }

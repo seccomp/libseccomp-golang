@@ -830,6 +830,11 @@ func notifIDValid(fd ScmpFd, id uint64) error {
 			break
 		}
 
+		// XXX: Alban, can this really happen? If it is insterrupted
+		// inside a syscall, it will be resumed just fine.
+		// And if it is interrupted in other parts of the C code, won't
+		// it be resumed just fine at the next line?
+		// I really doubt if this can happen...
 		if errno == syscall.EINTR {
 			continue
 		}

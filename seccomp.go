@@ -201,6 +201,11 @@ const (
 	ActTrap ScmpAction = iota
 	// ActNotify triggers a userspace notification. This action is only usable when
 	// libseccomp API level 5 or higher is supported.
+	// XXX rata: adding it here changes the number of all other actions.
+	// Can't it be a problem in some edge case?
+	// I don't know if there is some weird way to compile that can be a
+	// problem. I guess probably not, and for sure not for the simple cases,
+	// but unsure.
 	ActNotify ScmpAction = iota
 	// ActErrno causes the syscall to return a negative error code. This
 	// code can be set with the SetReturnCode method

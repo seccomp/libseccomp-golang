@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -843,7 +842,7 @@ func TestNotif(t *testing.T) {
 	execInSubprocess(t, subprocessNotif)
 }
 func subprocessNotif(t *testing.T) {
-	// seccomp notification requires API level >= 5
+	// seccomp notification requires API level >= 6
 	api, err := GetAPI()
 	if err != nil {
 		if !APILevelIsSupported() {
@@ -853,10 +852,10 @@ func subprocessNotif(t *testing.T) {
 		t.Errorf("Error getting API level: %s", err)
 	} else {
 		t.Logf("Got API level %v", api)
-		if api < 5 {
-			err = SetAPI(5)
+		if api < 6 {
+			err = SetAPI(6)
 			if err != nil {
-				t.Skipf("Skipping test: API level %d is less than 5 and could not set it to 5", api)
+				t.Skipf("Skipping test: API level %d is less than 6 and could not set it to 6", api)
 				return
 			}
 		}
@@ -874,17 +873,15 @@ func subprocessNotif(t *testing.T) {
 		return
 	}
 
+	// Create a filter that only notifies on chdir. This way, while the
+	// seccomp filter applies to all threads, we can run the target and
+	// handling in different go routines with no problem as only the target
+	// goroutine uses chdir.
 	filter, err := NewFilter(ActAllow)
 	if err != nil {
 		t.Errorf("Error creating filter: %s", err)
 	}
 	defer filter.Release()
-
-	// Seccomp notification is only supported on single-thread filters
-	err = filter.SetTsync(false)
-	if err != nil {
-		t.Errorf("Error setting tsync on filter: %s", err)
-	}
 
 	call, err := GetSyscallFromName("chdir")
 	if err != nil {
@@ -954,11 +951,6 @@ func subprocessNotif(t *testing.T) {
 	done := make(chan struct{})
 
 	go func() {
-		// Lock this goroutine to it's current kernel thread; otherwise the go runtime may
-		// switch us to a different OS thread, bypassing the seccomp notification filter.
-		runtime.LockOSThread()
-		defer runtime.UnlockOSThread()
-
 		err = filter.Load()
 		if err != nil {
 			t.Errorf("Error loading filter: %s", err)
@@ -1017,14 +1009,14 @@ func TestNotifUnsupported(t *testing.T) {
 	execInSubprocess(t, subprocessNotifUnsupported)
 }
 func subprocessNotifUnsupported(t *testing.T) {
-	// seccomp notification requires API level >= 5
+	// seccomp notification requires API level >= 6
 	api := 0
 	if APILevelIsSupported() {
 		api, err := GetAPI()
 		if err != nil {
 			t.Errorf("Error getting API level: %s", err)
-		} else if api >= 5 {
-			t.Skipf("Skipping test for old libseccomp support: API level %d is >= 5", api)
+		} else if api >= 6 {
+			t.Skipf("Skipping test for old libseccomp support: API level %d is >= 6", api)
 		}
 	}
 

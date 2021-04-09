@@ -200,7 +200,7 @@ const (
 	// ActTrap throws SIGSYS
 	ActTrap ScmpAction = iota
 	// ActNotify triggers a userspace notification. This action is only usable when
-	// libseccomp API level 5 or higher is supported.
+	// libseccomp API level 6 or higher is supported.
 	ActNotify ScmpAction = iota
 	// ActErrno causes the syscall to return a negative error code. This
 	// code can be set with the SetReturnCode method
@@ -604,9 +604,7 @@ type ScmpFilter struct {
 }
 
 // NewFilter creates and returns a new filter context.  Accepts a default action to be
-// taken for syscalls which match no rules in the filter. The newly created filter applies
-// to all threads of the calling process. Use SetTsync() to change this behavior prior to
-// loading the filter.
+// taken for syscalls which match no rules in the filter.
 // Returns a reference to a valid filter context, or nil and an error
 // if the filter context could not be created or an invalid default action was given.
 func NewFilter(defaultAction ScmpAction) (*ScmpFilter, error) {
@@ -636,27 +634,6 @@ func NewFilter(defaultAction ScmpAction) (*ScmpFilter, error) {
 	}
 
 	return filter, nil
-}
-
-// SetTsync sets or clears the filter's thread-sync (TSYNC) attribute. When set, this attribute
-// tells the kernel to synchronize all threads of the calling process to the same seccomp filter.
-// When using filters with the seccomp notification action (ActNotify), the TSYNC attribute
-// must be cleared prior to loading the filter. Refer to the seccomp manual page (seccomp(2)) for
-// further details.
-func (f *ScmpFilter) SetTsync(val bool) error {
-	var cval C.uint32_t
-
-	if val == true {
-		cval = 1
-	} else {
-		cval = 0
-	}
-
-	err := f.setFilterAttr(filterAttrTsync, cval)
-	if err != nil && val == false && err == syscall.ENOTSUP {
-		return nil
-	}
-	return err
 }
 
 // IsValid determines whether a filter context is valid to use.

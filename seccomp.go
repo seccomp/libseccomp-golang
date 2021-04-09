@@ -640,9 +640,10 @@ func NewFilter(defaultAction ScmpAction) (*ScmpFilter, error) {
 
 // SetTsync sets or clears the filter's thread-sync (TSYNC) attribute. When set, this attribute
 // tells the kernel to synchronize all threads of the calling process to the same seccomp filter.
-// When using filters with the seccomp notification action (ActNotify), the TSYNC attribute
-// must be cleared prior to loading the filter. Refer to the seccomp manual page (seccomp(2)) for
-// further details.
+// You normally never want to set this to false. However, advanced users running on Linux < 5.7 may
+// want to tune this and complement the missing functionality with other tricks in the go runtime.
+// It is highly discouraged to use this unless you really know what you are doing.
+// Refer to the seccomp manual page (seccomp(2)) for further details.
 func (f *ScmpFilter) SetTsync(val bool) error {
 	var cval C.uint32_t
 

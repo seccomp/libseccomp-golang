@@ -737,8 +737,8 @@ func (f *ScmpFilter) getNotifFd() (ScmpFd, error) {
 
 	// Ignore error, if not supported returns apiLevel == 0
 	apiLevel, _ := GetAPI()
-	if apiLevel < 5 {
-		return -1, fmt.Errorf("seccomp notification requires API level >= 5; current level = %d", apiLevel)
+	if apiLevel < 6 {
+		return -1, fmt.Errorf("seccomp notification requires API level >= 6; current level = %d", apiLevel)
 	}
 
 	fd := C.seccomp_notify_fd(f.filterCtx)
@@ -752,8 +752,8 @@ func notifReceive(fd ScmpFd) (*ScmpNotifReq, error) {
 
 	// Ignore error, if not supported returns apiLevel == 0
 	apiLevel, _ := GetAPI()
-	if apiLevel < 5 {
-		return nil, fmt.Errorf("seccomp notification requires API level >= 5; current level = %d", apiLevel)
+	if apiLevel < 6 {
+		return nil, fmt.Errorf("seccomp notification requires API level >= 6; current level = %d", apiLevel)
 	}
 
 	// we only use the request here; the response is unused
@@ -778,8 +778,8 @@ func notifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 
 	// Ignore error, if not supported returns apiLevel == 0
 	apiLevel, _ := GetAPI()
-	if apiLevel < 5 {
-		return fmt.Errorf("seccomp notification requires API level >= 5; current level = %d", apiLevel)
+	if apiLevel < 6 {
+		return fmt.Errorf("seccomp notification requires API level >= 6; current level = %d", apiLevel)
 	}
 
 	// we only use the reponse here; the request is discarded
@@ -803,8 +803,8 @@ func notifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 func notifIDValid(fd ScmpFd, id uint64) error {
 	// Ignore error, if not supported returns apiLevel == 0
 	apiLevel, _ := GetAPI()
-	if apiLevel < 5 {
-		return fmt.Errorf("seccomp notification requires API level >= 5; current level = %d", apiLevel)
+	if apiLevel < 6 {
+		return fmt.Errorf("seccomp notification requires API level >= 6; current level = %d", apiLevel)
 	}
 
 	if retCode := C.seccomp_notify_id_valid(C.int(fd), C.uint64_t(id)); retCode != 0 {

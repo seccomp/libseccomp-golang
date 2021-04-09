@@ -24,17 +24,8 @@ vet:
 # be noticed earlier in the CI.
 TEST_TIMEOUT=10s
 
-# Some tests run with SetTsync(false) and some tests with SetTsync(true). Once
-# the threads are not using the same seccomp filters anymore, the kernel will
-# refuse to use Tsync, causing next tests to fail. This issue could be left
-# unnoticed if the test with SetTsync(false) is executed last.
-#
-# Run tests twice ensure that no test leave the testing process in a state
-# unable to run following tests, regardless of the subset of tests selected.
-TEST_COUNT=2
-
 test:
-	go test -v -timeout $(TEST_TIMEOUT) -count $(TEST_COUNT)
+	go test -v -timeout $(TEST_TIMEOUT)
 
 lint:
 	@$(if $(shell which golint),true,$(error "install golint and include it in your PATH"))

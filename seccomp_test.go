@@ -464,13 +464,15 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 		t.Errorf("Log bit was not set correctly")
 	}
 
-	api, err := GetAPI()
-	if err != nil {
-		t.Errorf("Error getting API level: %s", err)
-	} else if api < 4 {
-		err = SetAPI(4)
+	if APILevelIsSupported() {
+		api, err := GetAPI()
 		if err != nil {
-			t.Skipf("Skipping test: API level %d is less than 4", api)
+			t.Errorf("Error getting API level: %s", err)
+		} else if api < 4 {
+			err = SetAPI(4)
+			if err != nil {
+				t.Skipf("Skipping test: API level %d is less than 4", api)
+			}
 		}
 	}
 

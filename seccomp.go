@@ -185,6 +185,8 @@ const (
 	ArchPARISC ScmpArch = iota
 	// ArchPARISC64 represents 64-bit PA-RISC
 	ArchPARISC64 ScmpArch = iota
+	// ArchRISCV64 represents RISCV64
+	ArchRISCV64 ScmpArch = iota
 )
 
 const (
@@ -313,6 +315,8 @@ func GetArchFromString(arch string) (ScmpArch, error) {
 		return ArchPARISC, nil
 	case "parisc64":
 		return ArchPARISC64, nil
+	case "riscv64":
+		return ArchRISCV64, nil
 	default:
 		return ArchInvalid, fmt.Errorf("cannot convert unrecognized string %q", arch)
 	}
@@ -357,6 +361,8 @@ func (a ScmpArch) String() string {
 		return "parisc"
 	case ArchPARISC64:
 		return "parisc64"
+	case ArchRISCV64:
+		return "riscv64"
 	case ArchNative:
 		return "native"
 	case ArchInvalid:

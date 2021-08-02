@@ -45,7 +45,6 @@ you want to run the standard regression tests, you can excute the following:
 
 	# make check
 
-In order to execute the 'make lint' recipe the 'golint' tool is needed, it
-can be found at:
+In order to use it, the 'golangci-lint' tool is needed, which can be found at:
 
-* https://github.com/golang/lint
+* https://github.com/golangci/golangci-lint

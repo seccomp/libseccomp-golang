@@ -45,7 +45,7 @@ func init() {
 	// This forces the cgo libseccomp to initialize its internal API support state,
 	// which is necessary on older versions of libseccomp in order to work
 	// correctly.
-	GetAPI()
+	_, _ = GetAPI()
 }
 
 func (e VersionError) Error() string {

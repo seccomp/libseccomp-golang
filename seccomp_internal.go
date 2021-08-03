@@ -302,19 +302,24 @@ var (
 
 // Nonexported functions
 
-// Check if library version is greater than or equal to the given one
-func checkVersionAbove(major, minor, micro uint) bool {
-	return (verMajor > major) ||
+// checkVersion returns an error if libseccomp version used during runtime
+// is less than the one required by major, minor, and micro arguments.
+// Argument op is arbitrary non-empty operation description, which
+// may is used as a part of the  error message returned.
+func checkVersion(op string, major, minor, micro uint) error {
+	if (verMajor > major) ||
 		(verMajor == major && verMinor > minor) ||
-		(verMajor == major && verMinor == minor && verMicro >= micro)
+		(verMajor == major && verMinor == minor && verMicro >= micro) {
+		return nil
+	}
+	return &VersionError{
+		op:     op,
+		minVer: fmt.Sprintf("%d.%d.%d", major, minor, micro),
+	}
 }
 
-// Ensure that the library is supported, i.e. >= 2.2.0.
 func ensureSupportedVersion() error {
-	if !checkVersionAbove(2, 2, 0) {
-		return VersionError{}
-	}
-	return nil
+	return checkVersion("seccomp", 2, 2, 0)
 }
 
 // Get the API level
@@ -433,11 +438,8 @@ func (f *ScmpFilter) addRuleGeneric(call ScmpSyscall, action ScmpAction, exact b
 		}
 	} else {
 		// We don't support conditional filtering in library version v2.1
-		if !checkVersionAbove(2, 2, 1) {
-			return VersionError{
-				message: "conditional filtering is not supported",
-				minimum: "2.2.1",
-			}
+		if err := checkVersion("conditional filtering", 2, 2, 1); err != nil {
+			return err
 		}
 
 		argsArr := C.make_arg_cmp_array(C.uint(len(conds)))
@@ -724,8 +726,30 @@ func (scmpResp *ScmpNotifResp) toNative(resp *C.struct_seccomp_notif_resp) {
 	resp.flags = C.__u32(scmpResp.Flags)
 }
 
+// checkAPI checks if API level is at least minLevel, and returns an error
+// otherwise. Argument op is an arbitrary string description the operation,
+// and minVersion is the minimally required libseccomp version.
+// Both op and minVersion are only used in an error message.
+func checkAPI(op string, minLevel uint, minVersion string) error {
+	// Ignore error from getAPI -- it returns level == 0 in case of error.
+	level, _ := getAPI()
+	if level >= minLevel {
+		return nil
+	}
+	return &VersionError{
+		op:     op,
+		curAPI: level,
+		minAPI: minLevel,
+		minVer: minVersion,
+	}
+}
+
 // Userspace Notification API
 // Calls to C.seccomp_notify* hidden from seccomp.go
+
+func notifSupported() error {
+	return checkAPI("seccomp notification", 6, "2.5.0")
+}
 
 func (f *ScmpFilter) getNotifFd() (ScmpFd, error) {
 	f.lock.Lock()
@@ -734,11 +758,8 @@ func (f *ScmpFilter) getNotifFd() (ScmpFd, error) {
 	if !f.valid {
 		return -1, errBadFilter
 	}
-
-	// Ignore error, if not supported returns apiLevel == 0
-	apiLevel, _ := GetAPI()
-	if apiLevel < 6 {
-		return -1, fmt.Errorf("seccomp notification requires API level >= 6; current level = %d", apiLevel)
+	if err := notifSupported(); err != nil {
+		return -1, err
 	}
 
 	fd := C.seccomp_notify_fd(f.filterCtx)
@@ -750,10 +771,8 @@ func notifReceive(fd ScmpFd) (*ScmpNotifReq, error) {
 	var req *C.struct_seccomp_notif
 	var resp *C.struct_seccomp_notif_resp
 
-	// Ignore error, if not supported returns apiLevel == 0
-	apiLevel, _ := GetAPI()
-	if apiLevel < 6 {
-		return nil, fmt.Errorf("seccomp notification requires API level >= 6; current level = %d", apiLevel)
+	if err := notifSupported(); err != nil {
+		return nil, err
 	}
 
 	// we only use the request here; the response is unused
@@ -789,10 +808,8 @@ func notifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 	var req *C.struct_seccomp_notif
 	var resp *C.struct_seccomp_notif_resp
 
-	// Ignore error, if not supported returns apiLevel == 0
-	apiLevel, _ := GetAPI()
-	if apiLevel < 6 {
-		return fmt.Errorf("seccomp notification requires API level >= 6; current level = %d", apiLevel)
+	if err := notifSupported(); err != nil {
+		return err
 	}
 
 	// we only use the reponse here; the request is discarded
@@ -827,10 +844,8 @@ func notifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 }
 
 func notifIDValid(fd ScmpFd, id uint64) error {
-	// Ignore error, if not supported returns apiLevel == 0
-	apiLevel, _ := GetAPI()
-	if apiLevel < 6 {
-		return fmt.Errorf("seccomp notification requires API level >= 6; current level = %d", apiLevel)
+	if err := notifSupported(); err != nil {
+		return err
 	}
 
 	for {

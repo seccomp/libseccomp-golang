@@ -34,32 +34,31 @@ import "C"
 
 // Exported types
 
-// VersionError denotes that the system libseccomp version is incompatible
-// with this package.
+// VersionError represents an error when either the system libseccomp version
+// or the kernel version is too old to perform the operation requested.
 type VersionError struct {
-	message string
-	minimum string
+	op             string // operation that failed or would fail
+	minVer         string // minimally required libseccomp version
+	curAPI, minAPI uint   // current and minimally required API versions
 }
 
 func init() {
 	// This forces the cgo libseccomp to initialize its internal API support state,
 	// which is necessary on older versions of libseccomp in order to work
 	// correctly.
-	GetAPI()
+	_, _ = getAPI()
 }
 
 func (e VersionError) Error() string {
-	messageStr := ""
-	if e.message != "" {
-		messageStr = e.message + ": "
+	if e.minAPI != 0 {
+		return fmt.Sprintf("%s requires libseccomp >= %s and API level >= %d "+
+			"(current version: %d.%d.%d, API level: %d)",
+			e.op, e.minVer, e.minAPI,
+			verMajor, verMinor, verMicro, e.curAPI)
 	}
-	minimumStr := ""
-	if e.minimum != "" {
-		minimumStr = e.minimum
-	} else {
-		minimumStr = "2.2.0"
-	}
-	return fmt.Sprintf("Libseccomp version too low: %sminimum supported is %s: detected %d.%d.%d", messageStr, minimumStr, verMajor, verMinor, verMicro)
+	return fmt.Sprintf("%s requires libseccomp >= %s (current version: %d.%d.%d)",
+		e.op, e.minVer, verMajor, verMinor, verMicro)
+
 }
 
 // ScmpArch represents a CPU architecture. Seccomp can restrict syscalls on a
@@ -874,10 +873,8 @@ func (f *ScmpFilter) GetNoNewPrivsBit() (bool, error) {
 func (f *ScmpFilter) GetLogBit() (bool, error) {
 	log, err := f.getFilterAttr(filterAttrLog)
 	if err != nil {
-		// Ignore error, if not supported returns apiLevel == 0
-		apiLevel, _ := GetAPI()
-		if apiLevel < 3 {
-			return false, fmt.Errorf("getting the log bit is only supported in libseccomp 2.4.0 and newer with API level 3 or higher")
+		if e := checkAPI("GetLogBit", 3, "2.4.0"); e != nil {
+			err = e
 		}
 
 		return false, err
@@ -899,9 +896,8 @@ func (f *ScmpFilter) GetLogBit() (bool, error) {
 func (f *ScmpFilter) GetSSB() (bool, error) {
 	ssb, err := f.getFilterAttr(filterAttrSSB)
 	if err != nil {
-		api, apiErr := getAPI()
-		if (apiErr != nil && api == 0) || (apiErr == nil && api < 4) {
-			return false, fmt.Errorf("getting the SSB flag is only supported in libseccomp 2.5.0 and newer with API level 4 or higher")
+		if e := checkAPI("GetSSB", 4, "2.5.0"); e != nil {
+			err = e
 		}
 
 		return false, err
@@ -953,10 +949,8 @@ func (f *ScmpFilter) SetLogBit(state bool) error {
 
 	err := f.setFilterAttr(filterAttrLog, toSet)
 	if err != nil {
-		// Ignore error, if not supported returns apiLevel == 0
-		apiLevel, _ := GetAPI()
-		if apiLevel < 3 {
-			return fmt.Errorf("setting the log bit is only supported in libseccomp 2.4.0 and newer with API level 3 or higher")
+		if e := checkAPI("SetLogBit", 3, "2.4.0"); e != nil {
+			err = e
 		}
 	}
 
@@ -976,9 +970,8 @@ func (f *ScmpFilter) SetSSB(state bool) error {
 
 	err := f.setFilterAttr(filterAttrSSB, toSet)
 	if err != nil {
-		api, apiErr := getAPI()
-		if (apiErr != nil && api == 0) || (apiErr == nil && api < 4) {
-			return fmt.Errorf("setting the SSB flag is only supported in libseccomp 2.5.0 and newer with API level 4 or higher")
+		if e := checkAPI("SetSSB", 4, "2.5.0"); e != nil {
+			err = e
 		}
 	}
 

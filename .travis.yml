@@ -38,8 +38,6 @@ addons:
   apt:
     packages:
       - build-essential
-      - astyle
-      - golint
       - gperf
 
 install:

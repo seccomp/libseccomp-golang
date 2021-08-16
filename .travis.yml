@@ -21,10 +21,10 @@ language: go
 
 jobs:
   include:
-    - name: "last libseccomp 2.5.0"
+    - name: "last libseccomp 2.5"
       env:
-      - SECCOMP_VER=2.5.0
-      - SECCOMP_SHA256SUM=1ffa7038d2720ad191919816db3479295a4bcca1ec14e02f672539f4983014f3
+      - SECCOMP_VER=2.5.1
+      - SECCOMP_SHA256SUM=ee307e383c77aa7995abc5ada544d51c9723ae399768a97667d4cdb3c3a30d55
     - name: "compat libseccomp 2.4.4"
       env:
       - SECCOMP_VER=2.4.4

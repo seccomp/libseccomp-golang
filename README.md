@@ -2,7 +2,7 @@
 ===============================================================================
 https://github.com/seccomp/libseccomp-golang
 
-[![validate](https://github.com/seccomp/libseccomp-golang/actions/workflows/validate.yml/badge.svg)](https://github.com/seccomp/libseccomp-golang/actions/workflows/validate.yml) [![test](https://github.com/seccomp/libseccomp-golang/actions/workflows/test.yml/badge.svg)](https://github.com/seccomp/libseccomp-golang/actions/workflows/test.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/seccomp/libseccomp-golang.svg)](https://pkg.go.dev/github.com/seccomp/libseccomp-golang) [![validate](https://github.com/seccomp/libseccomp-golang/actions/workflows/validate.yml/badge.svg)](https://github.com/seccomp/libseccomp-golang/actions/workflows/validate.yml) [![test](https://github.com/seccomp/libseccomp-golang/actions/workflows/test.yml/badge.svg)](https://github.com/seccomp/libseccomp-golang/actions/workflows/test.yml)
 
 The libseccomp library provides an easy to use, platform independent, interface
 to the Linux Kernel's syscall filtering mechanism.  The libseccomp API is
@@ -26,9 +26,9 @@ list.
 
 * https://groups.google.com/d/forum/libseccomp
 
-Documentation is also available at:
+Documentation for this package is also available at:
 
-* https://godoc.org/github.com/seccomp/libseccomp-golang
+* https://pkg.go.dev/github.com/seccomp/libseccomp-golang
 
 ## Installing the package
 

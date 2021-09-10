@@ -32,10 +32,6 @@ Documentation for this package is also available at:
 
 ## Installing the package
 
-The libseccomp-golang bindings require at least Go v1.2.1 and GCC v4.8.4;
-earlier versions may yield unpredictable results.  If you meet these
-requirements you can install this package using the command below:
-
 	# go get github.com/seccomp/libseccomp-golang
 
 ## Testing the Library

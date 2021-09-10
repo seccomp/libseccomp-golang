@@ -692,10 +692,6 @@ func (a scmpFilterAttr) toNative() uint32 {
 	}
 }
 
-func (a ScmpSyscall) toNative() C.uint32_t {
-	return C.uint32_t(a)
-}
-
 func syscallFromNative(a C.int) ScmpSyscall {
 	return ScmpSyscall(a)
 }

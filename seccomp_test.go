@@ -91,9 +91,8 @@ func TestSetAPILevel(t *testing.T) {
 	execInSubprocess(t, subprocessSetAPILevel)
 }
 func subprocessSetAPILevel(t *testing.T) {
-	var expectedAPI uint
+	const expectedAPI = uint(1)
 
-	expectedAPI = 1
 	err := SetAPI(expectedAPI)
 	if !APILevelIsSupported() {
 		if err == nil {

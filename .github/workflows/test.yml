@@ -16,22 +16,53 @@ jobs:
       fail-fast: false
       matrix:
         go-version: [1.15.x, 1.16.x, 1.17.x]
+        libseccomp: ["v2.5.2", "HEAD"]
 
     steps:
 
     - name: checkout
       uses: actions/checkout@v2
 
-    - name: install deps
-      run: |
-        sudo apt -q update
-        sudo apt -q install libseccomp-dev
-
     - name: install go ${{ matrix.go-version }}
       uses: actions/setup-go@v2
       with:
         stable: '!contains(${{ matrix.go-version }}, "beta") && !contains(${{ matrix.go-version }}, "rc")'
         go-version: ${{ matrix.go-version }}
+
+    - name: build libseccomp ${{ matrix.libseccomp }}
+      run: |
+        set -x
+        sudo apt -qq update
+        sudo apt -qq install gperf
+
+        PREFIX="$(pwd)/seccomp"
+        LIBDIR="$PREFIX/lib"
+
+        git clone https://github.com/seccomp/libseccomp
+        cd libseccomp
+        git checkout ${{ matrix.libseccomp }}
+        # In main branch, configure.ac sets libseccomp version to 0.0.0, which
+        # results in error when compiling libseccomp-golang. While 0.0.0 is
+        # there for a reason, here we need to build and test against HEAD, so
+        # set it to a suitable value.
+        #
+        # Version 9.9.9 is used because:
+        #  - version >= current is needed;
+        #  - chances are good such version won't ever exist;
+        #  - it is easy to spot in tests output;
+        #  - the LIBFILE pattern below expects single digits.
+        sed -i '/^AC_INIT(/s/0\.0\.0/9.9.9/' configure.ac
+        ./autogen.sh
+        ./configure --prefix="$PREFIX" --libdir="$LIBDIR"
+        make
+        sudo make install
+        cd -
+        rm -rf libseccomp
+
+        # For the next steps to build and execute with the compiled library.
+        echo "PKG_CONFIG_LIBDIR=$LIBDIR/pkgconfig" >> $GITHUB_ENV
+        LIBFILE="$(echo $LIBDIR/libseccomp.so.?.?.?)"
+        echo "LD_PRELOAD=$LIBFILE" >> $GITHUB_ENV
 
     - name: build
       run: make check-build

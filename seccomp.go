@@ -561,8 +561,8 @@ func MakeCondition(arg uint, comparison ScmpCompareOp, values ...uint64) (ScmpCo
 		return condStruct, err
 	}
 
-	if comparison == CompareInvalid {
-		return condStruct, fmt.Errorf("invalid comparison operator")
+	if err := sanitizeCompareOp(comparison); err != nil {
+		return condStruct, err
 	} else if arg > 5 {
 		return condStruct, fmt.Errorf("syscalls only have up to 6 arguments (%d given)", arg)
 	} else if len(values) > 2 {

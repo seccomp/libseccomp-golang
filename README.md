@@ -34,13 +34,6 @@ Documentation for this package is also available at:
 
 	# go get github.com/seccomp/libseccomp-golang
 
-## Testing the Library
+## Contributing
 
-A number of tests and lint related recipes are provided in the Makefile, if
-you want to run the standard regression tests, you can excute the following:
-
-	# make check
-
-In order to use it, the 'golangci-lint' tool is needed, which can be found at:
-
-* https://github.com/golangci/golangci-lint
+See [CONTRIBUTING.md](CONTRIBUTING.md).

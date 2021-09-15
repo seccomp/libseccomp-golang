@@ -14,7 +14,7 @@ import (
 )
 
 // execInSubprocess calls the go test binary again for the same test.
-// This must be only top-level statment in the test function. Do not nest this.
+// This must be only top-level statement in the test function. Do not nest this.
 // It will slightly defect the test log output as the test is entered twice
 func execInSubprocess(t *testing.T, f func(t *testing.T)) {
 	const subprocessEnvKey = `GO_SUBPROCESS_KEY`
@@ -137,7 +137,7 @@ func TestSyscallGetName(t *testing.T) {
 
 	_, err = callFail.GetName()
 	if err == nil {
-		t.Errorf("Getting nonexistant syscall should error!")
+		t.Errorf("Getting nonexistent syscall should error!")
 	}
 }
 
@@ -360,10 +360,10 @@ func TestFilterArchFunctions(t *testing.T) {
 		t.Errorf("Arch not added to filter is present")
 	}
 
-	// Try removing the nonexistant arch - should succeed
+	// Try removing the nonexistent arch - should succeed
 	err = filter.RemoveArch(prospectiveArch)
 	if err != nil {
-		t.Errorf("Error removing nonexistant arch: %s", err)
+		t.Errorf("Error removing nonexistent arch: %s", err)
 	}
 
 	// Add an arch, see if it's in the filter
@@ -420,7 +420,7 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error getting bad arch action")
 	} else if act != ActAllow {
-		t.Errorf("Bad arch action was not set correcly!")
+		t.Errorf("Bad arch action was not set correctly!")
 	}
 
 	err = filter.SetNoNewPrivsBit(false)

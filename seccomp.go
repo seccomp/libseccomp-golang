@@ -259,7 +259,7 @@ const (
 	// Userspace notification response flags
 
 	// NotifRespFlagContinue tells the kernel to continue executing the system
-	// call that triggered the notification. Must only be used when the notication
+	// call that triggered the notification. Must only be used when the notification
 	// response's error is 0.
 	NotifRespFlagContinue uint32 = 1
 )

@@ -479,6 +479,18 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 	} else if ssb != true {
 		t.Error("SSB bit was not set correctly")
 	}
+
+	err = filter.SetOptimize(2)
+	if err != nil {
+		t.Errorf("Error setting optimize level: %v", err)
+	}
+
+	level, err := filter.GetOptimize()
+	if err != nil {
+		t.Errorf("Error getting optimize level: %v", err)
+	} else if level != 2 {
+		t.Error("Optimize level was not set correctly")
+	}
 }
 
 func TestMergeFilters(t *testing.T) {

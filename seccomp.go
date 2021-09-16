@@ -902,6 +902,22 @@ func (f *ScmpFilter) GetSSB() (bool, error) {
 	return true, nil
 }
 
+// GetOptimize returns the current optimization level of the filter,
+// or an error if an issue was encountered retrieving the value.
+// See SetOptimize for more details.
+func (f *ScmpFilter) GetOptimize() (int, error) {
+	level, err := f.getFilterAttr(filterAttrOptimize)
+	if err != nil {
+		if e := checkAPI("GetOptimize", 4, 2, 5, 0); e != nil {
+			err = e
+		}
+
+		return 0, err
+	}
+
+	return int(level), nil
+}
+
 // SetBadArchAction sets the default action taken on a syscall for an
 // architecture not in the filter, or an error if an issue was encountered
 // setting the value.
@@ -963,6 +979,31 @@ func (f *ScmpFilter) SetSSB(state bool) error {
 	err := f.setFilterAttr(filterAttrSSB, toSet)
 	if err != nil {
 		if e := checkAPI("SetSSB", 4, 2, 5, 0); e != nil {
+			err = e
+		}
+	}
+
+	return err
+}
+
+// SetOptimize sets optimization level of the seccomp filter. By default
+// libseccomp generates a set of sequential "if" statements for each rule in
+// the filter. SetSyscallPriority can be used to prioritize the order for the
+// default cause. The binary tree optimization sorts by syscall numbers and
+// generates consistent O(log n) filter traversal for every rule in the filter.
+// The binary tree may be advantageous for large filters. Note that
+// SetSyscallPriority is ignored when level == 2.
+//
+// The different optimization levels are:
+// 0: Reserved value, not currently used.
+// 1: Rules sorted by priority and complexity (DEFAULT).
+// 2: Binary tree sorted by syscall number.
+func (f *ScmpFilter) SetOptimize(level int) error {
+	cLevel := C.uint32_t(level)
+
+	err := f.setFilterAttr(filterAttrOptimize, cLevel)
+	if err != nil {
+		if e := checkAPI("SetOptimize", 4, 2, 5, 0); e != nil {
 			err = e
 		}
 	}

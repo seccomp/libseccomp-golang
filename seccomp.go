@@ -144,46 +144,46 @@ const (
 	// variables are invalid
 	ArchInvalid ScmpArch = iota
 	// ArchNative is the native architecture of the kernel
-	ArchNative ScmpArch = iota
+	ArchNative
 	// ArchX86 represents 32-bit x86 syscalls
-	ArchX86 ScmpArch = iota
+	ArchX86
 	// ArchAMD64 represents 64-bit x86-64 syscalls
-	ArchAMD64 ScmpArch = iota
+	ArchAMD64
 	// ArchX32 represents 64-bit x86-64 syscalls (32-bit pointers)
-	ArchX32 ScmpArch = iota
+	ArchX32
 	// ArchARM represents 32-bit ARM syscalls
-	ArchARM ScmpArch = iota
+	ArchARM
 	// ArchARM64 represents 64-bit ARM syscalls
-	ArchARM64 ScmpArch = iota
+	ArchARM64
 	// ArchMIPS represents 32-bit MIPS syscalls
-	ArchMIPS ScmpArch = iota
+	ArchMIPS
 	// ArchMIPS64 represents 64-bit MIPS syscalls
-	ArchMIPS64 ScmpArch = iota
+	ArchMIPS64
 	// ArchMIPS64N32 represents 64-bit MIPS syscalls (32-bit pointers)
-	ArchMIPS64N32 ScmpArch = iota
+	ArchMIPS64N32
 	// ArchMIPSEL represents 32-bit MIPS syscalls (little endian)
-	ArchMIPSEL ScmpArch = iota
+	ArchMIPSEL
 	// ArchMIPSEL64 represents 64-bit MIPS syscalls (little endian)
-	ArchMIPSEL64 ScmpArch = iota
+	ArchMIPSEL64
 	// ArchMIPSEL64N32 represents 64-bit MIPS syscalls (little endian,
 	// 32-bit pointers)
-	ArchMIPSEL64N32 ScmpArch = iota
+	ArchMIPSEL64N32
 	// ArchPPC represents 32-bit POWERPC syscalls
-	ArchPPC ScmpArch = iota
+	ArchPPC
 	// ArchPPC64 represents 64-bit POWER syscalls (big endian)
-	ArchPPC64 ScmpArch = iota
+	ArchPPC64
 	// ArchPPC64LE represents 64-bit POWER syscalls (little endian)
-	ArchPPC64LE ScmpArch = iota
+	ArchPPC64LE
 	// ArchS390 represents 31-bit System z/390 syscalls
-	ArchS390 ScmpArch = iota
+	ArchS390
 	// ArchS390X represents 64-bit System z/390 syscalls
-	ArchS390X ScmpArch = iota
+	ArchS390X
 	// ArchPARISC represents 32-bit PA-RISC
-	ArchPARISC ScmpArch = iota
+	ArchPARISC
 	// ArchPARISC64 represents 64-bit PA-RISC
-	ArchPARISC64 ScmpArch = iota
+	ArchPARISC64
 	// ArchRISCV64 represents RISCV64
-	ArchRISCV64 ScmpArch = iota
+	ArchRISCV64
 )
 
 const (
@@ -194,32 +194,32 @@ const (
 	ActInvalid ScmpAction = iota
 	// ActKill kills the thread that violated the rule. It is the same as ActKillThread.
 	// All other threads from the same thread group will continue to execute.
-	ActKill ScmpAction = iota
+	ActKill
 	// ActTrap throws SIGSYS
-	ActTrap ScmpAction = iota
+	ActTrap
 	// ActNotify triggers a userspace notification. This action is only usable when
 	// libseccomp API level 6 or higher is supported.
-	ActNotify ScmpAction = iota
+	ActNotify
 	// ActErrno causes the syscall to return a negative error code. This
 	// code can be set with the SetReturnCode method
-	ActErrno ScmpAction = iota
+	ActErrno
 	// ActTrace causes the syscall to notify tracing processes with the
 	// given error code. This code can be set with the SetReturnCode method
-	ActTrace ScmpAction = iota
+	ActTrace
 	// ActAllow permits the syscall to continue execution
-	ActAllow ScmpAction = iota
+	ActAllow
 	// ActLog permits the syscall to continue execution after logging it.
 	// This action is only usable when libseccomp API level 3 or higher is
 	// supported.
-	ActLog ScmpAction = iota
+	ActLog
 	// ActKillThread kills the thread that violated the rule. It is the same as ActKill.
 	// All other threads from the same thread group will continue to execute.
-	ActKillThread ScmpAction = iota
+	ActKillThread
 	// ActKillProcess kills the process that violated the rule.
 	// All threads in the thread group are also terminated.
 	// This action is only usable when libseccomp API level 3 or higher is
 	// supported.
-	ActKillProcess ScmpAction = iota
+	ActKillProcess
 )
 
 const (
@@ -232,23 +232,23 @@ const (
 	CompareInvalid ScmpCompareOp = iota
 	// CompareNotEqual returns true if the argument is not equal to the
 	// given value
-	CompareNotEqual ScmpCompareOp = iota
+	CompareNotEqual
 	// CompareLess returns true if the argument is less than the given value
-	CompareLess ScmpCompareOp = iota
+	CompareLess
 	// CompareLessOrEqual returns true if the argument is less than or equal
 	// to the given value
-	CompareLessOrEqual ScmpCompareOp = iota
+	CompareLessOrEqual
 	// CompareEqual returns true if the argument is equal to the given value
-	CompareEqual ScmpCompareOp = iota
+	CompareEqual
 	// CompareGreaterEqual returns true if the argument is greater than or
 	// equal to the given value
-	CompareGreaterEqual ScmpCompareOp = iota
+	CompareGreaterEqual
 	// CompareGreater returns true if the argument is greater than the given
 	// value
-	CompareGreater ScmpCompareOp = iota
+	CompareGreater
 	// CompareMaskedEqual returns true if the argument is equal to the given
 	// value, when masked (bitwise &) against the second given value
-	CompareMaskedEqual ScmpCompareOp = iota
+	CompareMaskedEqual
 )
 
 // ErrSyscallDoesNotExist represents an error condition where

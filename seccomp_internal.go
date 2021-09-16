@@ -273,11 +273,11 @@ type scmpFilterAttr uint32
 
 const (
 	filterAttrActDefault scmpFilterAttr = iota
-	filterAttrActBadArch scmpFilterAttr = iota
-	filterAttrNNP        scmpFilterAttr = iota
-	filterAttrTsync      scmpFilterAttr = iota
-	filterAttrLog        scmpFilterAttr = iota
-	filterAttrSSB        scmpFilterAttr = iota
+	filterAttrActBadArch
+	filterAttrNNP
+	filterAttrTsync
+	filterAttrLog
+	filterAttrSSB
 )
 
 const (

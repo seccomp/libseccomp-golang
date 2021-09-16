@@ -427,6 +427,11 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 		t.Errorf("Bad arch action was not set correctly!")
 	}
 
+	err = filter.SetBadArchAction(ActInvalid)
+	if err == nil {
+		t.Errorf("Setting bad arch action to an invalid action should error")
+	}
+
 	err = filter.SetNoNewPrivsBit(false)
 	if err != nil {
 		t.Errorf("Error setting no new privileges bit")
@@ -501,11 +506,6 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 		}
 	} else if ssb != true {
 		t.Errorf("SSB bit was not set correctly")
-	}
-
-	err = filter.SetBadArchAction(ActInvalid)
-	if err == nil {
-		t.Errorf("Setting bad arch action to an invalid action should error")
 	}
 }
 

@@ -444,68 +444,40 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 		t.Errorf("No new privileges bit was not set correctly")
 	}
 
-	if APILevelIsSupported() {
-		api, err := GetAPI()
-		if err != nil {
-			t.Errorf("Error getting API level: %s", err)
-		} else if api < 3 {
-			err = SetAPI(3)
-			if err != nil {
-				t.Errorf("Error setting API level: %s", err)
-			}
-		}
+	// Checks that require API level >= 3 and libseccomp >= 2.4.0.
+	if err := checkAPI(t.Name(), 3, 2, 4, 0); err != nil {
+		t.Logf("Skipping the rest of the test: %v", err)
+		return
 	}
 
 	err = filter.SetLogBit(true)
 	if err != nil {
-		if !APILevelIsSupported() {
-			t.Logf("Ignoring failure: %s\n", err)
-		} else {
-			t.Errorf("Error setting log bit")
-		}
+		t.Errorf("Error setting log bit: %v", err)
 	}
 
 	log, err := filter.GetLogBit()
 	if err != nil {
-		if !APILevelIsSupported() {
-			t.Logf("Ignoring failure: %s\n", err)
-		} else {
-			t.Errorf("Error getting log bit")
-		}
+		t.Errorf("Error getting log bit: %v", err)
 	} else if log != true {
-		t.Errorf("Log bit was not set correctly")
+		t.Error("Log bit was not set correctly")
 	}
 
-	if APILevelIsSupported() {
-		api, err := GetAPI()
-		if err != nil {
-			t.Errorf("Error getting API level: %s", err)
-		} else if api < 4 {
-			err = SetAPI(4)
-			if err != nil {
-				t.Skipf("Skipping test: API level %d is less than 4", api)
-			}
-		}
+	// Checks that require API level >= 4 and libseccomp >= 2.5.0.
+	if err := checkAPI(t.Name(), 4, 2, 5, 0); err != nil {
+		t.Logf("Skipping the rest of the test: %v", err)
+		return
 	}
 
 	err = filter.SetSSB(true)
 	if err != nil {
-		if !APILevelIsSupported() {
-			t.Logf("Ignoring failure: %s\n", err)
-		} else {
-			t.Errorf("Error setting SSB bit")
-		}
+		t.Errorf("Error setting SSB bit: %v", err)
 	}
 
 	ssb, err := filter.GetSSB()
 	if err != nil {
-		if !APILevelIsSupported() {
-			t.Logf("Ignoring failure: %s\n", err)
-		} else {
-			t.Errorf("Error getting SSB bit")
-		}
+		t.Errorf("Error getting SSB bit: %v", err)
 	} else if ssb != true {
-		t.Errorf("SSB bit was not set correctly")
+		t.Error("SSB bit was not set correctly")
 	}
 }
 
@@ -664,18 +636,12 @@ func TestLogAct(t *testing.T) {
 }
 
 func subprocessLogAct(t *testing.T) {
-	expectedPid := syscall.Getpid()
-
-	api, err := GetAPI()
-	if err != nil {
-		if !APILevelIsSupported() {
-			t.Skipf("Skipping test: %s", err)
-		}
-
-		t.Errorf("Error getting API level: %s", err)
-	} else if api < 3 {
-		t.Skipf("Skipping test: API level %d is less than 3", api)
+	// ActLog requires API >=3 and libseccomp >= 2.4.0.
+	if err := checkAPI(t.Name(), 3, 2, 4, 0); err != nil {
+		t.Skip(err)
 	}
+
+	expectedPid := syscall.Getpid()
 
 	filter, err := NewFilter(ActAllow)
 	if err != nil {
@@ -725,15 +691,9 @@ func TestCreateActKillProcessFilter(t *testing.T) {
 }
 
 func subprocessCreateActKillProcessFilter(t *testing.T) {
-	api, err := GetAPI()
-	if err != nil {
-		if !APILevelIsSupported() {
-			t.Skipf("Skipping test: %s", err)
-		}
-
-		t.Errorf("Error getting API level: %s", err)
-	} else if api < 3 {
-		t.Skipf("Skipping test: API level %d is less than 3", api)
+	// Requires API level >= 3 and libseccomp >= 2.4.0
+	if err := checkAPI(t.Name(), 3, 2, 4, 0); err != nil {
+		t.Skip(err)
 	}
 
 	filter, err := NewFilter(ActKillThread)

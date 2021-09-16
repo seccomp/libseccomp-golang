@@ -125,6 +125,7 @@ const uint32_t C_ACT_NOTIFY        = SCMP_ACT_NOTIFY;
 #if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 5
 #define SCMP_FLTATR_CTL_SSB      _SCMP_FLTATR_MIN
 #define SCMP_FLTATR_CTL_OPTIMIZE _SCMP_FLTATR_MIN
+#define SCMP_FLTATR_API_SYSRAWRC _SCMP_FLTATR_MIN
 #endif
 
 const uint32_t C_ATTRIBUTE_DEFAULT  = (uint32_t)SCMP_FLTATR_ACT_DEFAULT;
@@ -134,6 +135,7 @@ const uint32_t C_ATTRIBUTE_TSYNC    = (uint32_t)SCMP_FLTATR_CTL_TSYNC;
 const uint32_t C_ATTRIBUTE_LOG      = (uint32_t)SCMP_FLTATR_CTL_LOG;
 const uint32_t C_ATTRIBUTE_SSB      = (uint32_t)SCMP_FLTATR_CTL_SSB;
 const uint32_t C_ATTRIBUTE_OPTIMIZE = (uint32_t)SCMP_FLTATR_CTL_OPTIMIZE;
+const uint32_t C_ATTRIBUTE_SYSRAWRC = (uint32_t)SCMP_FLTATR_API_SYSRAWRC;
 
 const int      C_CMP_NE            = (int)SCMP_CMP_NE;
 const int      C_CMP_LT            = (int)SCMP_CMP_LT;
@@ -281,6 +283,7 @@ const (
 	filterAttrLog
 	filterAttrSSB
 	filterAttrOptimize
+	filterAttrRawRC
 )
 
 const (
@@ -692,6 +695,8 @@ func (a scmpFilterAttr) toNative() uint32 {
 		return uint32(C.C_ATTRIBUTE_SSB)
 	case filterAttrOptimize:
 		return uint32(C.C_ATTRIBUTE_OPTIMIZE)
+	case filterAttrRawRC:
+		return uint32(C.C_ATTRIBUTE_SYSRAWRC)
 	default:
 		return 0x0
 	}

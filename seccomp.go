@@ -918,6 +918,26 @@ func (f *ScmpFilter) GetOptimize() (int, error) {
 	return int(level), nil
 }
 
+// GetRawRC returns the current state of RawRC flag, or an error
+// if an issue was encountered retrieving the value.
+// See SetRawRC for more details.
+func (f *ScmpFilter) GetRawRC() (bool, error) {
+	rawrc, err := f.getFilterAttr(filterAttrRawRC)
+	if err != nil {
+		if e := checkAPI("GetRawRC", 4, 2, 5, 0); e != nil {
+			err = e
+		}
+
+		return false, err
+	}
+
+	if rawrc == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 // SetBadArchAction sets the default action taken on a syscall for an
 // architecture not in the filter, or an error if an issue was encountered
 // setting the value.
@@ -1004,6 +1024,25 @@ func (f *ScmpFilter) SetOptimize(level int) error {
 	err := f.setFilterAttr(filterAttrOptimize, cLevel)
 	if err != nil {
 		if e := checkAPI("SetOptimize", 4, 2, 5, 0); e != nil {
+			err = e
+		}
+	}
+
+	return err
+}
+
+// SetRawRC sets whether libseccomp should pass system error codes back to the
+// caller, instead of the default ECANCELED. Defaults to false.
+func (f *ScmpFilter) SetRawRC(state bool) error {
+	var toSet C.uint32_t = 0x0
+
+	if state {
+		toSet = 0x1
+	}
+
+	err := f.setFilterAttr(filterAttrRawRC, toSet)
+	if err != nil {
+		if e := checkAPI("SetRawRC", 4, 2, 5, 0); e != nil {
 			err = e
 		}
 	}

@@ -491,6 +491,18 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 	} else if level != 2 {
 		t.Error("Optimize level was not set correctly")
 	}
+
+	err = filter.SetRawRC(true)
+	if err != nil {
+		t.Errorf("Error setting RawRC flag: %v", err)
+	}
+
+	rawrc, err := filter.GetRawRC()
+	if err != nil {
+		t.Errorf("Error getting RawRC flag: %v", err)
+	} else if rawrc != true {
+		t.Error("RawRC flag was not set correctly")
+	}
 }
 
 func TestMergeFilters(t *testing.T) {

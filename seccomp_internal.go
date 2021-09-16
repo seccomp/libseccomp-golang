@@ -116,8 +116,7 @@ const uint32_t C_ACT_NOTIFY        = SCMP_ACT_NOTIFY;
 
 // The libseccomp SCMP_FLTATR_CTL_LOG member of the scmp_filter_attr enum was
 // added in v2.4.0
-#if (SCMP_VER_MAJOR < 2) || \
-    (SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 4)
+#if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 4
 #define SCMP_FLTATR_CTL_LOG _SCMP_FLTATR_MIN
 #endif
 #if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 5
@@ -176,8 +175,7 @@ unsigned int get_micro_version()
 #endif
 
 // The libseccomp API level functions were added in v2.4.0
-#if (SCMP_VER_MAJOR < 2) || \
-    (SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 4)
+#if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 4
 const unsigned int seccomp_api_get(void)
 {
 	// libseccomp-golang requires libseccomp v2.2.0, at a minimum, which
@@ -220,8 +218,7 @@ void add_struct_arg_cmp(
 }
 
 // The seccomp notify API functions were added in v2.5.0
-#if (SCMP_VER_MAJOR < 2) || \
-    (SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 5)
+#if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 5
 
 struct seccomp_data {
 	int nr;

@@ -1,5 +1,3 @@
-// +build linux
-
 // Tests for public API of libseccomp Go bindings
 
 package seccomp

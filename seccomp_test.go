@@ -46,8 +46,7 @@ func execInSubprocess(t *testing.T, f func(t *testing.T)) {
 
 func APILevelIsSupported() bool {
 	return verMajor > 2 ||
-		(verMajor == 2 && verMinor > 3) ||
-		(verMajor == 2 && verMinor == 3 && verMicro >= 3)
+		(verMajor == 2 && verMinor >= 4)
 }
 
 func TestGetAPILevel(t *testing.T) {

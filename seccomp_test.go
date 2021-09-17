@@ -42,6 +42,27 @@ func execInSubprocess(t *testing.T, f func(t *testing.T)) {
 	}
 }
 
+func TestExpectedSeccompVersion(t *testing.T) {
+	execInSubprocess(t, subprocessExpectedSeccompVersion)
+}
+
+func subprocessExpectedSeccompVersion(t *testing.T) {
+	// This environment variable can be set by CI.
+	const name = "_EXPECTED_LIBSECCOMP_VERSION"
+
+	expVer := os.Getenv(name)
+	if expVer == "" {
+		t.Skip(name, "not set")
+	}
+	expVer = strings.TrimPrefix(expVer, "v")
+
+	curVer := fmt.Sprintf("%d.%d.%d", verMajor, verMinor, verMicro)
+	t.Logf("testing against libseccomp %s", curVer)
+	if curVer != expVer {
+		t.Fatalf("libseccomp version mismatch: must be %s, got %s", expVer, curVer)
+	}
+}
+
 // Type Function Tests
 
 func APILevelIsSupported() bool {

@@ -6,25 +6,26 @@ import (
 
 func TestCheckVersion(t *testing.T) {
 	for _, tc := range []struct {
-		// test input
+		// input
 		op      string
 		x, y, z uint
-		// test output
-		res string // empty string if no error is expected
+		// expectations
+		isErr bool
 	}{
-		{
-			op: "frobnicate", x: 100, y: 99, z: 7,
-			res: "frobnicate requires libseccomp >= 100.99.7 (current version: ",
-		},
-		{
-			op: "old-ver", x: 2, y: 2, z: 0, // 2.2.0 is guaranteed to succeed
-		},
+		{op: "verNew", x: 100, y: 99, z: 7, isErr: true},
+		{op: "verMajor+1", x: verMajor + 1, isErr: true},
+		{op: "verMinor+1", x: verMajor, y: verMinor + 1, isErr: true},
+		{op: "verMicro+1", x: verMajor, y: verMinor, z: verMicro + 1, isErr: true},
+		// Current version is guaranteed to succeed.
+		{op: "verCur", x: verMajor, y: verMinor, z: verMicro},
+		// 2.2.0 is guaranteed to succeed.
+		{op: "verOld", x: 2, y: 2, z: 0},
 	} {
 		err := checkVersion(tc.op, tc.x, tc.y, tc.z)
 		t.Log(err)
-		if tc.res != "" { // error expected
+		if tc.isErr {
 			if err == nil {
-				t.Errorf("case %s: expected %q-like error, got nil", tc.op, tc.res)
+				t.Errorf("case %s: expected error, got nil", tc.op)
 			}
 			continue
 		}
@@ -35,27 +36,30 @@ func TestCheckVersion(t *testing.T) {
 }
 
 func TestCheckAPI(t *testing.T) {
+	curAPI, _ := getAPI()
 	for _, tc := range []struct {
-		// test input
-		op    string
-		level uint
-		ver   string
-		// test output
-		res string // empty string if no error is expected
+		// input
+		op      string
+		level   uint
+		x, y, z uint
+		// expectations
+		isErr bool
 	}{
-		{
-			op: "deviate", level: 99, ver: "100.99.88",
-			res: "frobnicate requires libseccomp >= 100.99.7 (current version: ",
-		},
-		{
-			op: "api-0", level: 0, // API 0 will succeed
-		},
+		{op: "apiHigh", level: 99, isErr: true},
+		{op: "api+1", level: curAPI + 1, isErr: true},
+		// Cases that should succeed.
+		{op: "apiCur", level: curAPI},
+		{op: "api0", level: 0},
+		{op: "apiCur_verCur", level: curAPI, x: verMajor, y: verMinor, z: verMicro},
+		// Adequate API level but version is too high.
+		{op: "verHigh", level: 0, x: 99, isErr: true},
+		// Other cases with version are checked by testCheckVersion.
 	} {
-		err := checkAPI(tc.op, tc.level, tc.ver)
+		err := checkAPI(tc.op, tc.level, tc.x, tc.y, tc.z)
 		t.Log(err)
-		if tc.res != "" { // error expected
+		if tc.isErr {
 			if err == nil {
-				t.Errorf("case %s: expected %q-like error, got nil", tc.op, tc.res)
+				t.Errorf("case %s: expected error, got nil", tc.op)
 			}
 			continue
 		}

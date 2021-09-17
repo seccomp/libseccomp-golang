@@ -777,23 +777,8 @@ func TestNotif(t *testing.T) {
 }
 
 func subprocessNotif(t *testing.T) {
-	// seccomp notification requires API level >= 6
-	api, err := GetAPI()
-	if err != nil {
-		if !APILevelIsSupported() {
-			t.Skipf("Skipping test: %s", err)
-		}
-
-		t.Errorf("Error getting API level: %s", err)
-	} else {
-		t.Logf("Got API level %v", api)
-		if api < 6 {
-			err = SetAPI(6)
-			if err != nil {
-				t.Skipf("Skipping test: API level %d is less than 6 and could not set it to 6", api)
-				return
-			}
-		}
+	if err := notifSupported(); err != nil {
+		t.Skip(err)
 	}
 
 	arch, err := GetNativeArch()
@@ -945,15 +930,8 @@ func TestNotifUnsupported(t *testing.T) {
 }
 
 func subprocessNotifUnsupported(t *testing.T) {
-	// seccomp notification requires API level >= 6
-	api := 0
-	if APILevelIsSupported() {
-		api, err := GetAPI()
-		if err != nil {
-			t.Errorf("Error getting API level: %s", err)
-		} else if api >= 6 {
-			t.Skipf("Skipping test for old libseccomp support: API level %d is >= 6", api)
-		}
+	if err := notifSupported(); err == nil {
+		t.Skip("seccomp notification is supported")
 	}
 
 	filter, err := NewFilter(ActAllow)
@@ -964,6 +942,6 @@ func subprocessNotifUnsupported(t *testing.T) {
 
 	_, err = filter.GetNotifFd()
 	if err == nil {
-		t.Errorf("Error: GetNotifFd was supposed to fail with API level %d", api)
+		t.Error("GetNotifFd: got nil, want error")
 	}
 }

@@ -30,7 +30,9 @@ func execInSubprocess(t *testing.T, f func(t *testing.T)) {
 			cmd.Args = append(cmd.Args, arg)
 		}
 	}
-	cmd.Env = []string{subprocessEnvKey + "=1"}
+	cmd.Env = append(os.Environ(),
+		subprocessEnvKey+"=1",
+	)
 	cmd.Stdin = os.Stdin
 
 	out, err := cmd.CombinedOutput()

@@ -33,29 +33,11 @@ func execInSubprocess(t *testing.T, f func(t *testing.T)) {
 	cmd.Env = []string{subprocessEnvKey + "=1"}
 	cmd.Stdin = os.Stdin
 
-	var b strings.Builder
-	cmd.Stdout = &b
-	cmd.Stderr = &b
-
-	err := cmd.Start()
+	out, err := cmd.CombinedOutput()
+	t.Logf("%s", out)
 	if err != nil {
-		t.Logf("\n%s", b.String())
-		t.Error("failed to spawn test in sub-process", err)
-		t.FailNow()
+		t.Fatal(err)
 	}
-
-	err = cmd.Wait()
-	if err != nil {
-		t.Logf("\n%s", b.String())
-		if err, ok := err.(*exec.ExitError); ok {
-			// err.ExitCode() not available in go1.11
-			// https://github.com/golang/go/issues/26539
-			t.Errorf("Test failed: %v", err.String())
-		}
-		t.Error(`test failed`)
-		t.FailNow()
-	}
-	t.Logf("\n%s", b.String())
 }
 
 // Type Function Tests

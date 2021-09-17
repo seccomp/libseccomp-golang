@@ -416,7 +416,9 @@ func (f *ScmpFilter) addRuleWrapper(call ScmpSyscall, action ScmpAction, exact b
 		switch e := errRc(retCode); e {
 		case syscall.EFAULT:
 			return fmt.Errorf("unrecognized syscall %#x", int32(call))
-		case syscall.EPERM:
+		// libseccomp >= v2.5.0 returns EACCES, older versions return EPERM.
+		// TODO: remove EPERM once libseccomp < v2.5.0 is not supported.
+		case syscall.EPERM, syscall.EACCES:
 			return errDefAction
 		case syscall.EINVAL:
 			return fmt.Errorf("two checks on same syscall argument")

@@ -302,10 +302,12 @@ var (
 
 // Nonexported functions
 
-// checkVersion returns an error if libseccomp version used during runtime
-// is less than the one required by major, minor, and micro arguments.
-// Argument op is arbitrary non-empty operation description, which
-// may is used as a part of the  error message returned.
+// checkVersion returns an error if the libseccomp version being used
+// is less than the one specified by major, minor, and micro arguments.
+// Argument op is an arbitrary non-empty operation description, which
+// is used as a part of the error message returned.
+//
+// Most users should use checkAPI instead.
 func checkVersion(op string, major, minor, micro uint) error {
 	if (verMajor > major) ||
 		(verMajor == major && verMinor > minor) ||
@@ -313,8 +315,10 @@ func checkVersion(op string, major, minor, micro uint) error {
 		return nil
 	}
 	return &VersionError{
-		op:     op,
-		minVer: fmt.Sprintf("%d.%d.%d", major, minor, micro),
+		op:    op,
+		major: major,
+		minor: minor,
+		micro: micro,
 	}
 }
 
@@ -721,21 +725,24 @@ func (scmpResp *ScmpNotifResp) toNative(resp *C.struct_seccomp_notif_resp) {
 	resp.flags = C.__u32(scmpResp.Flags)
 }
 
-// checkAPI checks if API level is at least minLevel, and returns an error
-// otherwise. Argument op is an arbitrary string description the operation,
-// and minVersion is the minimally required libseccomp version.
-// Both op and minVersion are only used in an error message.
-func checkAPI(op string, minLevel uint, minVersion string) error {
-	// Ignore error from getAPI -- it returns level == 0 in case of error.
+// checkAPI checks that both the API level and the seccomp version is equal to
+// or greater than the specified minLevel and major, minor, micro,
+// respectively, and returns an error otherwise. Argument op is an arbitrary
+// non-empty operation description, used as a part of the error message
+// returned.
+func checkAPI(op string, minLevel uint, major, minor, micro uint) error {
+	// Ignore error from getAPI, as it returns level == 0 in case of error.
 	level, _ := getAPI()
 	if level >= minLevel {
-		return nil
+		return checkVersion(op, major, minor, micro)
 	}
 	return &VersionError{
 		op:     op,
 		curAPI: level,
 		minAPI: minLevel,
-		minVer: minVersion,
+		major:  major,
+		minor:  minor,
+		micro:  micro,
 	}
 }
 
@@ -743,7 +750,7 @@ func checkAPI(op string, minLevel uint, minVersion string) error {
 // Calls to C.seccomp_notify* hidden from seccomp.go
 
 func notifSupported() error {
-	return checkAPI("seccomp notification", 6, "2.5.0")
+	return checkAPI("seccomp notification", 6, 2, 5, 0)
 }
 
 func (f *ScmpFilter) getNotifFd() (ScmpFd, error) {

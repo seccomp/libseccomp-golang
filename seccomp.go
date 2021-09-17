@@ -25,9 +25,9 @@ import "C"
 // VersionError represents an error when either the system libseccomp version
 // or the kernel version is too old to perform the operation requested.
 type VersionError struct {
-	op             string // operation that failed or would fail
-	minVer         string // minimally required libseccomp version
-	curAPI, minAPI uint   // current and minimally required API versions
+	op                  string // operation that failed or would fail
+	major, minor, micro uint   // minimally required libseccomp version
+	curAPI, minAPI      uint   // current and minimally required API versions
 }
 
 func init() {
@@ -39,13 +39,13 @@ func init() {
 
 func (e VersionError) Error() string {
 	if e.minAPI != 0 {
-		return fmt.Sprintf("%s requires libseccomp >= %s and API level >= %d "+
+		return fmt.Sprintf("%s requires libseccomp >= %d.%d.%d and API level >= %d "+
 			"(current version: %d.%d.%d, API level: %d)",
-			e.op, e.minVer, e.minAPI,
+			e.op, e.major, e.minor, e.micro, e.minAPI,
 			verMajor, verMinor, verMicro, e.curAPI)
 	}
-	return fmt.Sprintf("%s requires libseccomp >= %s (current version: %d.%d.%d)",
-		e.op, e.minVer, verMajor, verMinor, verMicro)
+	return fmt.Sprintf("%s requires libseccomp >= %d.%d.%d (current version: %d.%d.%d)",
+		e.op, e.major, e.minor, e.micro, verMajor, verMinor, verMicro)
 }
 
 // ScmpArch represents a CPU architecture. Seccomp can restrict syscalls on a
@@ -864,7 +864,7 @@ func (f *ScmpFilter) GetNoNewPrivsBit() (bool, error) {
 func (f *ScmpFilter) GetLogBit() (bool, error) {
 	log, err := f.getFilterAttr(filterAttrLog)
 	if err != nil {
-		if e := checkAPI("GetLogBit", 3, "2.4.0"); e != nil {
+		if e := checkAPI("GetLogBit", 3, 2, 4, 0); e != nil {
 			err = e
 		}
 
@@ -887,7 +887,7 @@ func (f *ScmpFilter) GetLogBit() (bool, error) {
 func (f *ScmpFilter) GetSSB() (bool, error) {
 	ssb, err := f.getFilterAttr(filterAttrSSB)
 	if err != nil {
-		if e := checkAPI("GetSSB", 4, "2.5.0"); e != nil {
+		if e := checkAPI("GetSSB", 4, 2, 5, 0); e != nil {
 			err = e
 		}
 
@@ -940,7 +940,7 @@ func (f *ScmpFilter) SetLogBit(state bool) error {
 
 	err := f.setFilterAttr(filterAttrLog, toSet)
 	if err != nil {
-		if e := checkAPI("SetLogBit", 3, "2.4.0"); e != nil {
+		if e := checkAPI("SetLogBit", 3, 2, 4, 0); e != nil {
 			err = e
 		}
 	}
@@ -961,7 +961,7 @@ func (f *ScmpFilter) SetSSB(state bool) error {
 
 	err := f.setFilterAttr(filterAttrSSB, toSet)
 	if err != nil {
-		if e := checkAPI("SetSSB", 4, "2.5.0"); e != nil {
+		if e := checkAPI("SetSSB", 4, 2, 5, 0); e != nil {
 			err = e
 		}
 	}

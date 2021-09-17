@@ -563,6 +563,25 @@ func TestMergeFilters(t *testing.T) {
 	}
 }
 
+func TestAddRuleErrors(t *testing.T) {
+	execInSubprocess(t, subprocessAddRuleErrors)
+}
+
+func subprocessAddRuleErrors(t *testing.T) {
+	filter, err := NewFilter(ActAllow)
+	if err != nil {
+		t.Errorf("Error creating filter: %s", err)
+	}
+	defer filter.Release()
+
+	err = filter.AddRule(ScmpSyscall(0x1), ActAllow)
+	if err == nil {
+		t.Error("expected error, got nil")
+	} else if err != errDefAction {
+		t.Errorf("expected error %v, got %v", errDefAction, err)
+	}
+}
+
 func TestRuleAddAndLoad(t *testing.T) {
 	execInSubprocess(t, subprocessRuleAddAndLoad)
 }

@@ -69,6 +69,7 @@ func APILevelIsSupported() bool {
 func TestGetAPILevel(t *testing.T) {
 	execInSubprocess(t, subprocessGetAPILevel)
 }
+
 func subprocessGetAPILevel(t *testing.T) {
 	api, err := GetAPI()
 	if !APILevelIsSupported() {
@@ -88,6 +89,7 @@ func subprocessGetAPILevel(t *testing.T) {
 func TestSetAPILevel(t *testing.T) {
 	execInSubprocess(t, subprocessSetAPILevel)
 }
+
 func subprocessSetAPILevel(t *testing.T) {
 	const expectedAPI = uint(1)
 
@@ -560,6 +562,7 @@ func TestMergeFilters(t *testing.T) {
 func TestRuleAddAndLoad(t *testing.T) {
 	execInSubprocess(t, subprocessRuleAddAndLoad)
 }
+
 func subprocessRuleAddAndLoad(t *testing.T) {
 	// Test #1: Add a trivial filter
 	filter1, err := NewFilter(ActAllow)
@@ -636,6 +639,7 @@ func subprocessRuleAddAndLoad(t *testing.T) {
 func TestLogAct(t *testing.T) {
 	execInSubprocess(t, subprocessLogAct)
 }
+
 func subprocessLogAct(t *testing.T) {
 	expectedPid := syscall.Getpid()
 
@@ -681,6 +685,7 @@ func subprocessLogAct(t *testing.T) {
 func TestCreateActKillThreadFilter(t *testing.T) {
 	execInSubprocess(t, subprocessCreateActKillThreadFilter)
 }
+
 func subprocessCreateActKillThreadFilter(t *testing.T) {
 	filter, err := NewFilter(ActKillThread)
 	if err != nil {
@@ -695,6 +700,7 @@ func subprocessCreateActKillThreadFilter(t *testing.T) {
 func TestCreateActKillProcessFilter(t *testing.T) {
 	execInSubprocess(t, subprocessCreateActKillProcessFilter)
 }
+
 func subprocessCreateActKillProcessFilter(t *testing.T) {
 	api, err := GetAPI()
 	if err != nil {
@@ -786,6 +792,7 @@ func notifHandler(ch chan error, fd ScmpFd, tests []notifTest) {
 func TestNotif(t *testing.T) {
 	execInSubprocess(t, subprocessNotif)
 }
+
 func subprocessNotif(t *testing.T) {
 	// seccomp notification requires API level >= 6
 	api, err := GetAPI()
@@ -953,6 +960,7 @@ L:
 func TestNotifUnsupported(t *testing.T) {
 	execInSubprocess(t, subprocessNotifUnsupported)
 }
+
 func subprocessNotifUnsupported(t *testing.T) {
 	// seccomp notification requires API level >= 6
 	api := 0

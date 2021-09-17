@@ -56,7 +56,6 @@ func (e VersionError) Error() string {
 	}
 	return fmt.Sprintf("%s requires libseccomp >= %s (current version: %d.%d.%d)",
 		e.op, e.minVer, verMajor, verMinor, verMicro)
-
 }
 
 // ScmpArch represents a CPU architecture. Seccomp can restrict syscalls on a
@@ -252,11 +251,9 @@ const (
 	CompareMaskedEqual ScmpCompareOp = iota
 )
 
-var (
-	// ErrSyscallDoesNotExist represents an error condition where
-	// libseccomp is unable to resolve the syscall
-	ErrSyscallDoesNotExist = fmt.Errorf("could not resolve syscall name")
-)
+// ErrSyscallDoesNotExist represents an error condition where
+// libseccomp is unable to resolve the syscall
+var ErrSyscallDoesNotExist = fmt.Errorf("could not resolve syscall name")
 
 const (
 	// Userspace notification response flags

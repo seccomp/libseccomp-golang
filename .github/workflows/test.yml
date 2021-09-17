@@ -51,7 +51,11 @@ jobs:
         #  - chances are good such version won't ever exist;
         #  - it is easy to spot in tests output;
         #  - the LIBFILE pattern below expects single digits.
-        sed -i '/^AC_INIT(/s/0\.0\.0/9.9.9/' configure.ac
+        VER="${{ matrix.libseccomp }}"
+        if [ "$VER" == "HEAD" ]; then
+          VER=9.9.9
+          sed -i "/^AC_INIT(/s/0\.0\.0/$VER/" configure.ac
+        fi
         ./autogen.sh
         ./configure --prefix="$PREFIX" --libdir="$LIBDIR"
         make
@@ -63,6 +67,8 @@ jobs:
         echo "PKG_CONFIG_LIBDIR=$LIBDIR/pkgconfig" >> $GITHUB_ENV
         LIBFILE="$(echo $LIBDIR/libseccomp.so.?.?.?)"
         echo "LD_PRELOAD=$LIBFILE" >> $GITHUB_ENV
+        # For TestExpectedSeccompVersion.
+        echo "_EXPECTED_LIBSECCOMP_VERSION=$VER" >> $GITHUB_ENV
 
     - name: build
       run: make check-build

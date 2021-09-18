@@ -4,6 +4,7 @@
 package seccomp
 
 import (
+	"errors"
 	"fmt"
 	"syscall"
 )
@@ -295,8 +296,9 @@ const (
 )
 
 var (
-	// Error thrown on bad filter context
-	errBadFilter = fmt.Errorf("filter is invalid or uninitialized")
+	// errBadFilter is thrown on bad filter context.
+	errBadFilter = errors.New("filter is invalid or uninitialized")
+	errDefAction = errors.New("requested action matches default action of filter")
 	// Constants representing library major, minor, and micro versions
 	verMajor = uint(C.get_major_version())
 	verMinor = uint(C.get_minor_version())
@@ -415,7 +417,7 @@ func (f *ScmpFilter) addRuleWrapper(call ScmpSyscall, action ScmpAction, exact b
 		case syscall.EFAULT:
 			return fmt.Errorf("unrecognized syscall %#x", int32(call))
 		case syscall.EPERM:
-			return fmt.Errorf("requested action matches default action of filter")
+			return errDefAction
 		case syscall.EINVAL:
 			return fmt.Errorf("two checks on same syscall argument")
 		default:

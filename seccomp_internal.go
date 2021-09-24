@@ -815,7 +815,7 @@ func notifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 		return err
 	}
 
-	// we only use the reponse here; the request is discarded
+	// we only use the response here; the request is discarded
 	if retCode := C.seccomp_notify_alloc(&req, &resp); retCode != 0 {
 		return errRc(retCode)
 	}

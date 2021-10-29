@@ -236,8 +236,9 @@ const (
 	// CompareGreater returns true if the argument is greater than the given
 	// value
 	CompareGreater
-	// CompareMaskedEqual returns true if the argument is equal to the given
-	// value, when masked (bitwise &) against the second given value
+	// CompareMaskedEqual returns true if the masked argument value is
+	// equal to the masked datum value. Mask is the first argument, and
+	// datum is the second one.
 	CompareMaskedEqual
 )
 

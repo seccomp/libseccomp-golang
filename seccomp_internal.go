@@ -629,8 +629,6 @@ func (a ScmpCompareOp) toNative() C.int {
 func actionFromNative(a C.uint32_t) (ScmpAction, error) {
 	aTmp := a & 0xFFFF
 	switch a & 0xFFFF0000 {
-	case C.C_ACT_KILL:
-		return ActKill, nil
 	case C.C_ACT_KILL_PROCESS:
 		return ActKillProcess, nil
 	case C.C_ACT_KILL_THREAD:
@@ -655,8 +653,6 @@ func actionFromNative(a C.uint32_t) (ScmpAction, error) {
 // Only use with sanitized actions, no error handling
 func (a ScmpAction) toNative() C.uint32_t {
 	switch a & 0xFFFF {
-	case ActKill:
-		return C.C_ACT_KILL
 	case ActKillProcess:
 		return C.C_ACT_KILL_PROCESS
 	case ActKillThread:

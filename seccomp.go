@@ -202,14 +202,14 @@ const (
 	// This action is only usable when libseccomp API level 3 or higher is
 	// supported.
 	ActLog
-	// ActKillThread kills the thread that violated the rule. It is the same as ActKill.
-	// All other threads from the same thread group will continue to execute.
-	ActKillThread
 	// ActKillProcess kills the process that violated the rule.
 	// All threads in the thread group are also terminated.
 	// This action is only usable when libseccomp API level 3 or higher is
 	// supported.
 	ActKillProcess
+	// ActKillThread kills the thread that violated the rule. It is the same as ActKill.
+	// All other threads from the same thread group will continue to execute.
+	ActKillThread = ActKill
 )
 
 const (
@@ -385,7 +385,7 @@ func (a ScmpCompareOp) String() string {
 // String returns a string representation of a seccomp match action
 func (a ScmpAction) String() string {
 	switch a & 0xFFFF {
-	case ActKill, ActKillThread:
+	case ActKillThread:
 		return "Action: Kill thread"
 	case ActKillProcess:
 		return "Action: Kill process"

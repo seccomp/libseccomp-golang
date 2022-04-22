@@ -274,7 +274,7 @@ func TestFilterCreateRelease(t *testing.T) {
 		t.Errorf("Can create filter with invalid action")
 	}
 
-	filter, err := NewFilter(ActKill)
+	filter, err := NewFilter(ActKillThread)
 	if err != nil {
 		t.Errorf("Error creating filter: %s", err)
 	}
@@ -291,7 +291,7 @@ func TestFilterCreateRelease(t *testing.T) {
 }
 
 func TestFilterReset(t *testing.T) {
-	filter, err := NewFilter(ActKill)
+	filter, err := NewFilter(ActKillThread)
 	if err != nil {
 		t.Errorf("Error creating filter: %s", err)
 	}
@@ -301,7 +301,7 @@ func TestFilterReset(t *testing.T) {
 	action, err := filter.GetDefaultAction()
 	if err != nil {
 		t.Errorf("Error getting default action of filter")
-	} else if action != ActKill {
+	} else if action != ActKillThread {
 		t.Errorf("Default action of filter was set incorrectly!")
 	}
 
@@ -326,7 +326,7 @@ func TestFilterReset(t *testing.T) {
 }
 
 func TestFilterArchFunctions(t *testing.T) {
-	filter, err := NewFilter(ActKill)
+	filter, err := NewFilter(ActKillThread)
 	if err != nil {
 		t.Errorf("Error creating filter: %s", err)
 	}
@@ -402,7 +402,7 @@ func TestFilterArchFunctions(t *testing.T) {
 }
 
 func TestFilterAttributeGettersAndSetters(t *testing.T) {
-	filter, err := NewFilter(ActKill)
+	filter, err := NewFilter(ActKillThread)
 	if err != nil {
 		t.Errorf("Error creating filter: %s", err)
 	}
@@ -411,7 +411,7 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 	act, err := filter.GetDefaultAction()
 	if err != nil {
 		t.Errorf("Error getting default action: %s", err)
-	} else if act != ActKill {
+	} else if act != ActKillThread {
 		t.Errorf("Default action was set incorrectly")
 	}
 
@@ -547,7 +547,7 @@ func TestMergeFilters(t *testing.T) {
 		t.Errorf("Source filter should not be valid after merging")
 	}
 
-	filter3, err := NewFilter(ActKill)
+	filter3, err := NewFilter(ActKillThread)
 	if err != nil {
 		t.Errorf("Error creating filter: %s", err)
 	}

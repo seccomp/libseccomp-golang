@@ -293,7 +293,7 @@ const (
 	archStart ScmpArch = ArchNative
 	archEnd   ScmpArch = ArchRISCV64
 	// Comparison boundaries to check for action validity
-	actionStart ScmpAction = ActKill
+	actionStart ScmpAction = ActKillThread
 	actionEnd   ScmpAction = ActKillProcess
 	// Comparison boundaries to check for comparison operator validity
 	compareOpStart ScmpCompareOp = CompareNotEqual

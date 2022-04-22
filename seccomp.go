@@ -182,9 +182,9 @@ const (
 	// ActInvalid is a placeholder to ensure uninitialized ScmpAction
 	// variables are invalid
 	ActInvalid ScmpAction = iota
-	// ActKill kills the thread that violated the rule. It is the same as ActKillThread.
+	// ActKillThread kills the thread that violated the rule.
 	// All other threads from the same thread group will continue to execute.
-	ActKill
+	ActKillThread
 	// ActTrap throws SIGSYS
 	ActTrap
 	// ActNotify triggers a userspace notification. This action is only usable when
@@ -207,9 +207,11 @@ const (
 	// This action is only usable when libseccomp API level 3 or higher is
 	// supported.
 	ActKillProcess
-	// ActKillThread kills the thread that violated the rule. It is the same as ActKill.
+	// ActKill kills the thread that violated the rule.
 	// All other threads from the same thread group will continue to execute.
-	ActKillThread = ActKill
+	//
+	// Deprecated: use ActKillThread
+	ActKill = ActKillThread
 )
 
 const (

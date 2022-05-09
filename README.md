@@ -22,12 +22,6 @@ The library source repository currently lives on GitHub at the following URLs:
 * https://github.com/seccomp/libseccomp-golang
 * https://github.com/seccomp/libseccomp
 
-The project mailing list is currently hosted on Google Groups at the URL below,
-please note that a Google account is not required to subscribe to the mailing
-list.
-
-* https://groups.google.com/d/forum/libseccomp
-
 Documentation for this package is also available at:
 
 * https://pkg.go.dev/github.com/seccomp/libseccomp-golang

@@ -26,9 +26,33 @@ Documentation for this package is also available at:
 
 * https://pkg.go.dev/github.com/seccomp/libseccomp-golang
 
+## Verifying Releases
+
+Starting with libseccomp-golang v0.9.2, the git tag corresponding to each
+release should be signed by one of the libseccomp-golang maintainers.  It is
+recommended that before use you verify the release tags using the following
+command:
+
+	% git tag -v <tag>
+
+At present, only the following keys, specified via the fingerprints below, are
+authorized to sign official libseccomp-golang release tags:
+
+	Paul Moore <paul@paul-moore.com>
+	7100 AADF AE6E 6E94 0D2E  0AD6 55E4 5A5A E8CA 7C8A
+
+	Tom Hromatka <tom.hromatka@oracle.com>
+	47A6 8FCE 37C7 D702 4FD6  5E11 356C E62C 2B52 4099
+
+	Kir Kolyshkin <kolyshkin@gmail.com>
+	C242 8CD7 5720 FACD CF76  B6EA 17DE 5ECB 75A1 100E
+
+More information on GnuPG and git tag verification can be found at their
+respective websites: https://git-scm.com/docs/git and https://gnupg.org.
+
 ## Installing the package
 
-	# go get github.com/seccomp/libseccomp-golang
+	% go get github.com/seccomp/libseccomp-golang
 
 ## Contributing
 

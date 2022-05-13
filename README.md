@@ -28,7 +28,7 @@ Documentation for this package is also available at:
 
 ## Verifying Releases
 
-Starting with libseccomp-golang v0.9.2, the git tag corresponding to each
+Starting with libseccomp-golang v0.10.0, the git tag corresponding to each
 release should be signed by one of the libseccomp-golang maintainers.  It is
 recommended that before use you verify the release tags using the following
 command:

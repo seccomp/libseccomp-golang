@@ -623,7 +623,7 @@ func NewFilter(defaultAction ScmpAction) (*ScmpFilter, error) {
 	// If the kernel does not support TSYNC, allow us to continue without error.
 	if err := filter.setFilterAttr(filterAttrTsync, 0x1); err != nil && err != syscall.ENOTSUP {
 		filter.Release()
-		return nil, fmt.Errorf("could not create filter - error setting tsync bit: %v", err)
+		return nil, fmt.Errorf("could not create filter: error setting tsync bit: %w", err)
 	}
 
 	return filter, nil
@@ -702,7 +702,7 @@ func (f *ScmpFilter) Merge(src *ScmpFilter) error {
 	if retCode := C.seccomp_merge(f.filterCtx, src.filterCtx); retCode != 0 {
 		e := errRc(retCode)
 		if e == syscall.EINVAL {
-			return fmt.Errorf("filters could not be merged due to a mismatch in attributes or invalid filter")
+			return fmt.Errorf("filters could not be merged due to a mismatch in attributes or invalid filter: %w", e)
 		}
 		return e
 	}

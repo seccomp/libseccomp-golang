@@ -349,11 +349,12 @@ func getAPI() (uint, error) {
 // Set the API level
 func setAPI(api uint) error {
 	if retCode := C.seccomp_api_set(C.uint(api)); retCode != 0 {
-		if errRc(retCode) == syscall.EOPNOTSUPP {
+		e := errRc(retCode)
+		if e == syscall.EOPNOTSUPP {
 			return fmt.Errorf("API level operations are not supported")
 		}
 
-		return fmt.Errorf("could not set API level: %v", retCode)
+		return fmt.Errorf("could not set API level: %w", e)
 	}
 
 	return nil

@@ -33,8 +33,9 @@ type VersionError struct {
 
 func init() {
 	// This forces the cgo libseccomp to initialize its internal API support state,
-	// which is necessary on older versions of libseccomp in order to work
+	// which is necessary on older versions of libseccomp (< 2.5.0) in order to work
 	// correctly.
+	// TODO: remove once libseccomp < v2.5.0 is not supported.
 	_, _ = getAPI()
 }
 

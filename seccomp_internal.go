@@ -145,11 +145,6 @@ const int      C_CMP_GE            = (int)SCMP_CMP_GE;
 const int      C_CMP_GT            = (int)SCMP_CMP_GT;
 const int      C_CMP_MASKED_EQ     = (int)SCMP_CMP_MASKED_EQ;
 
-const int      C_VERSION_MAJOR     = SCMP_VER_MAJOR;
-const int      C_VERSION_MINOR     = SCMP_VER_MINOR;
-const int      C_VERSION_MICRO     = SCMP_VER_MICRO;
-
-#if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR >= 3
 unsigned int get_major_version()
 {
         return seccomp_version()->major;
@@ -164,22 +159,6 @@ unsigned int get_micro_version()
 {
         return seccomp_version()->micro;
 }
-#else
-unsigned int get_major_version()
-{
-        return (unsigned int)C_VERSION_MAJOR;
-}
-
-unsigned int get_minor_version()
-{
-        return (unsigned int)C_VERSION_MINOR;
-}
-
-unsigned int get_micro_version()
-{
-        return (unsigned int)C_VERSION_MICRO;
-}
-#endif
 
 // The libseccomp API level functions were added in v2.4.0
 #if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 4

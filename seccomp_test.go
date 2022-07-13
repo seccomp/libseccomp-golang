@@ -590,9 +590,14 @@ func subprocessRuleAddAndLoad(t *testing.T) {
 	}
 	defer filter1.Release()
 
-	call, err := GetSyscallFromName("getpid")
+	const expErr = 28 // ENOSPC, but can be anything not usually returned by listen(2).
+	call, err := GetSyscallFromName("listen")
 	if err != nil {
-		t.Errorf("Error getting syscall number of getpid: %s", err)
+		t.Errorf("Error getting syscall number of listen: %s", err)
+	}
+	err = filter1.AddRule(call, ActErrno.SetReturnCode(expErr))
+	if err != nil {
+		t.Errorf("Error adding rule to restrict syscall: %s", err)
 	}
 
 	call2, err := GetSyscallFromName("setreuid")
@@ -607,11 +612,6 @@ func subprocessRuleAddAndLoad(t *testing.T) {
 
 	uid := syscall.Getuid()
 	euid := syscall.Geteuid()
-
-	err = filter1.AddRule(call, ActErrno.SetReturnCode(0x1))
-	if err != nil {
-		t.Errorf("Error adding rule to restrict syscall: %s", err)
-	}
 
 	cond, err := MakeCondition(1, CompareEqual, uint64(euid))
 	if err != nil {
@@ -640,10 +640,9 @@ func subprocessRuleAddAndLoad(t *testing.T) {
 		t.Errorf("Error loading filter: %s", err)
 	}
 
-	// Try making a simple syscall, it should error
-	pid := syscall.Getpid()
-	if pid != -1 {
-		t.Errorf("Syscall should have returned error code!")
+	// Try making a simple syscall which should return an error.
+	if err := syscall.Listen(0, 0); err != syscall.Errno(expErr) {
+		t.Errorf("Syscall listen: want %v, got %v", syscall.Errno(expErr), err)
 	}
 
 	// Try making a Geteuid syscall that should normally succeed

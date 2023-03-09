@@ -68,6 +68,22 @@ const uint32_t C_ARCH_BAD = ARCH_BAD;
 #define SCMP_ARCH_RISCV64 ARCH_BAD
 #endif
 
+#ifndef SCMP_ARCH_LOONGARCH64
+#define SCMP_ARCH_LOONGARCH64 ARCH_BAD
+#endif
+
+#ifndef SCMP_ARCH_M68K
+#define SCMP_ARCH_M68K ARCH_BAD
+#endif
+
+#ifndef SCMP_ARCH_SH
+#define SCMP_ARCH_SH ARCH_BAD
+#endif
+
+#ifndef SCMP_ARCH_SHEB
+#define SCMP_ARCH_SHEB ARCH_BAD
+#endif
+
 const uint32_t C_ARCH_NATIVE       = SCMP_ARCH_NATIVE;
 const uint32_t C_ARCH_X86          = SCMP_ARCH_X86;
 const uint32_t C_ARCH_X86_64       = SCMP_ARCH_X86_64;
@@ -88,6 +104,10 @@ const uint32_t C_ARCH_S390X        = SCMP_ARCH_S390X;
 const uint32_t C_ARCH_PARISC       = SCMP_ARCH_PARISC;
 const uint32_t C_ARCH_PARISC64     = SCMP_ARCH_PARISC64;
 const uint32_t C_ARCH_RISCV64      = SCMP_ARCH_RISCV64;
+const uint32_t C_ARCH_LOONGARCH64  = SCMP_ARCH_LOONGARCH64;
+const uint32_t C_ARCH_M68K         = SCMP_ARCH_M68K;
+const uint32_t C_ARCH_SH           = SCMP_ARCH_SH;
+const uint32_t C_ARCH_SHEB         = SCMP_ARCH_SHEB;
 
 #ifndef SCMP_ACT_LOG
 #define SCMP_ACT_LOG 0x7ffc0000U
@@ -270,7 +290,7 @@ const (
 	scmpError C.int = -1
 	// Comparison boundaries to check for architecture validity
 	archStart ScmpArch = ArchNative
-	archEnd   ScmpArch = ArchRISCV64
+	archEnd   ScmpArch = ArchSHEB
 	// Comparison boundaries to check for action validity
 	actionStart ScmpAction = ActKillThread
 	actionEnd   ScmpAction = ActKillProcess
@@ -531,6 +551,14 @@ func archFromNative(a C.uint32_t) (ScmpArch, error) {
 		return ArchPARISC64, nil
 	case C.C_ARCH_RISCV64:
 		return ArchRISCV64, nil
+	case C.C_ARCH_LOONGARCH64:
+		return ArchLOONGARCH64, nil
+	case C.C_ARCH_M68K:
+		return ArchM68K, nil
+	case C.C_ARCH_SH:
+		return ArchSH, nil
+	case C.C_ARCH_SHEB:
+		return ArchSHEB, nil
 	default:
 		return 0x0, fmt.Errorf("unrecognized architecture %#x", uint32(a))
 	}
@@ -577,6 +605,14 @@ func (a ScmpArch) toNative() C.uint32_t {
 		return C.C_ARCH_PARISC64
 	case ArchRISCV64:
 		return C.C_ARCH_RISCV64
+	case ArchLOONGARCH64:
+		return C.C_ARCH_LOONGARCH64
+	case ArchM68K:
+		return C.C_ARCH_M68K
+	case ArchSH:
+		return C.C_ARCH_SH
+	case ArchSHEB:
+		return C.C_ARCH_SHEB
 	case ArchNative:
 		return C.C_ARCH_NATIVE
 	default:

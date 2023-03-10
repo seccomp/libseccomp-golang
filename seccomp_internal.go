@@ -88,6 +88,7 @@ const uint32_t C_ARCH_S390X        = SCMP_ARCH_S390X;
 const uint32_t C_ARCH_PARISC       = SCMP_ARCH_PARISC;
 const uint32_t C_ARCH_PARISC64     = SCMP_ARCH_PARISC64;
 const uint32_t C_ARCH_RISCV64      = SCMP_ARCH_RISCV64;
+const uint32_t C_ARCH_LOONGARCH64  = SCMP_ARCH_LOONGARCH64;
 
 #ifndef SCMP_ACT_LOG
 #define SCMP_ACT_LOG 0x7ffc0000U
@@ -270,7 +271,7 @@ const (
 	scmpError C.int = -1
 	// Comparison boundaries to check for architecture validity
 	archStart ScmpArch = ArchNative
-	archEnd   ScmpArch = ArchRISCV64
+	archEnd   ScmpArch = ArchLOONG64
 	// Comparison boundaries to check for action validity
 	actionStart ScmpAction = ActKillThread
 	actionEnd   ScmpAction = ActKillProcess
@@ -531,6 +532,8 @@ func archFromNative(a C.uint32_t) (ScmpArch, error) {
 		return ArchPARISC64, nil
 	case C.C_ARCH_RISCV64:
 		return ArchRISCV64, nil
+	case C.C_ARCH_LOONGARCH64:
+		return ArchLOONG64, nil
 	default:
 		return 0x0, fmt.Errorf("unrecognized architecture %#x", uint32(a))
 	}
@@ -577,6 +580,8 @@ func (a ScmpArch) toNative() C.uint32_t {
 		return C.C_ARCH_PARISC64
 	case ArchRISCV64:
 		return C.C_ARCH_RISCV64
+	case ArchLOONG64:
+		return C.C_ARCH_LOONGARCH64
 	case ArchNative:
 		return C.C_ARCH_NATIVE
 	default:

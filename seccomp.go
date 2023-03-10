@@ -176,6 +176,8 @@ const (
 	ArchPARISC64
 	// ArchRISCV64 represents RISCV64
 	ArchRISCV64
+	// ArchLOONG64 represents 64-bit LoongArch syscalls
+	ArchLOONG64
 )
 
 const (
@@ -307,6 +309,8 @@ func GetArchFromString(arch string) (ScmpArch, error) {
 		return ArchPARISC64, nil
 	case "riscv64":
 		return ArchRISCV64, nil
+	case "loong64", "loongarch64":
+		return ArchLOONG64, nil
 	default:
 		return ArchInvalid, fmt.Errorf("cannot convert unrecognized string %q", arch)
 	}
@@ -353,6 +357,8 @@ func (a ScmpArch) String() string {
 		return "parisc64"
 	case ArchRISCV64:
 		return "riscv64"
+	case ArchLOONG64:
+		return "loong64"
 	case ArchNative:
 		return "native"
 	case ArchInvalid:

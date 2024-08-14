@@ -14,19 +14,19 @@ jobs:
   lint:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: install deps
         run: |
           sudo apt -q update
           sudo apt -q install libseccomp-dev
-      - uses: golangci/golangci-lint-action@v3
+      - uses: golangci/golangci-lint-action@v6
         with:
           version: v1.60
 
   codespell:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: install deps
       # Version of codespell bundled with Ubuntu is way old, so use pip.
       run: pip install codespell

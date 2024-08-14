@@ -21,12 +21,7 @@ jobs:
     steps:
 
     - name: checkout
-      uses: actions/checkout@v3
-
-    - name: install go ${{ matrix.go-version }}
-      uses: actions/setup-go@v3
-      with:
-        go-version: ${{ matrix.go-version }}
+      uses: actions/checkout@v4
 
     - name: build libseccomp ${{ matrix.libseccomp }}
       run: |
@@ -68,6 +63,17 @@ jobs:
         echo "LD_PRELOAD=$LIBFILE" >> $GITHUB_ENV
         # For TestExpectedSeccompVersion.
         echo "_EXPECTED_LIBSECCOMP_VERSION=$VER" >> $GITHUB_ENV
+
+    - name: install go ${{ matrix.go-version }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        # Add libseccomp.pc path so that setup-go adds this file hash to cache key.
+        # This way, we'll have different caches for different libseccomp versions.
+        cache-dependency-path: |
+          go.sum
+          ${{ env.PKG_CONFIG_LIBDIR }}/libseccomp.pc
+
 
     - name: build
       run: make check-build

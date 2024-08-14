@@ -12,7 +12,7 @@ on:
 jobs:
 
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: install deps
@@ -24,11 +24,11 @@ jobs:
           version: v1.60
 
   codespell:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: install deps
-      # Version of codespell bundled with Ubuntu is way old, so use pip.
-      run: pip install codespell
+      # Version of codespell bundled with Ubuntu will become old, so use pip.
+      run: pip install --break-system-packages codespell
     - name: run codespell
       run: codespell

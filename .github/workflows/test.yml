@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.22.x, 1.23.x]
+        go-version: [1.22.x, 1.23.x, 1.24.0-rc.2]
         libseccomp: ["v2.3.3", "v2.4.4", "v2.5.5", "HEAD"]
 
     steps:

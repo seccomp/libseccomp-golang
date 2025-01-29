@@ -11,22 +11,17 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.19.x, 1.20.x]
-        libseccomp: ["v2.3.3", "v2.4.3", "v2.5.4", "HEAD"]
+        go-version: [1.22.x, 1.23.x]
+        libseccomp: ["v2.3.3", "v2.4.4", "v2.5.5", "HEAD"]
 
     steps:
 
     - name: checkout
-      uses: actions/checkout@v3
-
-    - name: install go ${{ matrix.go-version }}
-      uses: actions/setup-go@v3
-      with:
-        go-version: ${{ matrix.go-version }}
+      uses: actions/checkout@v4
 
     - name: build libseccomp ${{ matrix.libseccomp }}
       run: |
@@ -68,6 +63,17 @@ jobs:
         echo "LD_PRELOAD=$LIBFILE" >> $GITHUB_ENV
         # For TestExpectedSeccompVersion.
         echo "_EXPECTED_LIBSECCOMP_VERSION=$VER" >> $GITHUB_ENV
+
+    - name: install go ${{ matrix.go-version }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        # Add libseccomp.pc path so that setup-go adds this file hash to cache key.
+        # This way, we'll have different caches for different libseccomp versions.
+        cache-dependency-path: |
+          go.sum
+          ${{ env.PKG_CONFIG_LIBDIR }}/libseccomp.pc
+
 
     - name: build
       run: make check-build

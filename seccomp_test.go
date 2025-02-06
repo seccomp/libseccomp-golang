@@ -503,6 +503,24 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 	} else if rawrc != true {
 		t.Error("RawRC flag was not set correctly")
 	}
+
+	// Checks that require API level >= 7 and libseccomp >= 2.6.0.
+	if err := checkAPI(t.Name(), 7, 2, 6, 0); err != nil {
+		t.Logf("Skipping the rest of the test: %v", err)
+		return
+	}
+
+	err = filter.SetWaitKill(true)
+	if err != nil {
+		t.Errorf("Error setting WaitKill flag: %v", err)
+	}
+
+	wk, err := filter.GetWaitKill()
+	if err != nil {
+		t.Errorf("Error getting WaitKill flag: %v", err)
+	} else if wk != true {
+		t.Error("WaitKill flag was not set correctly")
+	}
 }
 
 func TestMergeFilters(t *testing.T) {

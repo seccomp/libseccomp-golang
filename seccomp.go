@@ -961,6 +961,25 @@ func (f *ScmpFilter) GetRawRC() (bool, error) {
 	return true, nil
 }
 
+// GetWaitKill returns the current state of WaitKill flag,
+// or an error if an issue was encountered retrieving the value.
+// See SetWaitKill for more details.
+func (f *ScmpFilter) GetWaitKill() (bool, error) {
+	val, err := f.getFilterAttr(filterAttrWaitKill)
+	if err != nil {
+		if e := checkAPI("GetWaitKill", 7, 2, 6, 0); e != nil {
+			err = e
+		}
+
+		return false, err
+	}
+	if val == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 // SetBadArchAction sets the default action taken on a syscall for an
 // architecture not in the filter, or an error if an issue was encountered
 // setting the value.
@@ -1066,6 +1085,25 @@ func (f *ScmpFilter) SetRawRC(state bool) error {
 	err := f.setFilterAttr(filterAttrRawRC, toSet)
 	if err != nil {
 		if e := checkAPI("SetRawRC", 4, 2, 5, 0); e != nil {
+			err = e
+		}
+	}
+
+	return err
+}
+
+// SetWaitKill sets whether libseccomp should request wait killable semantics
+// when possible. Defaults to false.
+func (f *ScmpFilter) SetWaitKill(state bool) error {
+	var toSet C.uint32_t = 0x0
+
+	if state {
+		toSet = 0x1
+	}
+
+	err := f.setFilterAttr(filterAttrWaitKill, toSet)
+	if err != nil {
+		if e := checkAPI("SetWaitKill", 7, 2, 6, 0); e != nil {
 			err = e
 		}
 	}

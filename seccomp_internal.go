@@ -148,6 +148,11 @@ const uint32_t C_ACT_NOTIFY        = SCMP_ACT_NOTIFY;
 #define SCMP_FLTATR_API_SYSRAWRC _SCMP_FLTATR_MIN
 #endif
 
+// Added in libseccomp v2.6.0.
+#if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 6
+#define SCMP_FLTATR_CTL_WAITKILL _SCMP_FLTATR_MIN
+#endif
+
 const uint32_t C_ATTRIBUTE_DEFAULT  = (uint32_t)SCMP_FLTATR_ACT_DEFAULT;
 const uint32_t C_ATTRIBUTE_BADARCH  = (uint32_t)SCMP_FLTATR_ACT_BADARCH;
 const uint32_t C_ATTRIBUTE_NNP      = (uint32_t)SCMP_FLTATR_CTL_NNP;
@@ -156,6 +161,7 @@ const uint32_t C_ATTRIBUTE_LOG      = (uint32_t)SCMP_FLTATR_CTL_LOG;
 const uint32_t C_ATTRIBUTE_SSB      = (uint32_t)SCMP_FLTATR_CTL_SSB;
 const uint32_t C_ATTRIBUTE_OPTIMIZE = (uint32_t)SCMP_FLTATR_CTL_OPTIMIZE;
 const uint32_t C_ATTRIBUTE_SYSRAWRC = (uint32_t)SCMP_FLTATR_API_SYSRAWRC;
+const uint32_t C_ATTRIBUTE_WAITKILL = (uint32_t)SCMP_FLTATR_CTL_WAITKILL;
 
 const int      C_CMP_NE            = (int)SCMP_CMP_NE;
 const int      C_CMP_LT            = (int)SCMP_CMP_LT;
@@ -283,6 +289,7 @@ const (
 	filterAttrSSB
 	filterAttrOptimize
 	filterAttrRawRC
+	filterAttrWaitKill
 )
 
 const (
@@ -709,6 +716,8 @@ func (a scmpFilterAttr) toNative() uint32 {
 		return uint32(C.C_ATTRIBUTE_OPTIMIZE)
 	case filterAttrRawRC:
 		return uint32(C.C_ATTRIBUTE_SYSRAWRC)
+	case filterAttrWaitKill:
+		return uint32(C.C_ATTRIBUTE_WAITKILL)
 	default:
 		return 0x0
 	}

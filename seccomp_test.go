@@ -3,6 +3,7 @@
 package seccomp
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -503,6 +504,24 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 	} else if rawrc != true {
 		t.Error("RawRC flag was not set correctly")
 	}
+
+	// Checks that require API level >= 7 and libseccomp >= 2.6.0.
+	if err := checkAPI(t.Name(), 7, 2, 6, 0); err != nil {
+		t.Logf("Skipping the rest of the test: %v", err)
+		return
+	}
+
+	err = filter.SetWaitKill(true)
+	if err != nil {
+		t.Errorf("Error setting WaitKill flag: %v", err)
+	}
+
+	wk, err := filter.GetWaitKill()
+	if err != nil {
+		t.Errorf("Error getting WaitKill flag: %v", err)
+	} else if wk != true {
+		t.Error("WaitKill flag was not set correctly")
+	}
 }
 
 func TestMergeFilters(t *testing.T) {
@@ -583,6 +602,18 @@ func TestRuleAddAndLoad(t *testing.T) {
 }
 
 func subprocessRuleAddAndLoad(t *testing.T) {
+	doSubprocessRuleAddAndLoad(t, false)
+}
+
+func TestRuleAddPrecomputeAndLoad(t *testing.T) {
+	execInSubprocess(t, subprocessRuleAddPrecomputeAndLoad)
+}
+
+func subprocessRuleAddPrecomputeAndLoad(t *testing.T) {
+	doSubprocessRuleAddAndLoad(t, true)
+}
+
+func doSubprocessRuleAddAndLoad(t *testing.T, precompute bool) {
 	// Test #1: Add a trivial filter
 	filter1, err := NewFilter(ActAllow)
 	if err != nil {
@@ -633,6 +664,19 @@ func subprocessRuleAddAndLoad(t *testing.T) {
 	err = filter1.AddRuleConditional(call3, ActErrno.SetReturnCode(0x3), conditions)
 	if err != nil {
 		t.Errorf("Error adding second conditional rule: %s", err)
+	}
+
+	if precompute {
+		expErr := error(nil)
+		// Precompute needs seccomp 2.6.0 and API level 7.
+		if checkAPI(t.Name(), 7, 2, 6, 0) != nil {
+			expErr = syscall.EOPNOTSUPP
+		}
+
+		err = filter1.Precompute()
+		if !errors.Is(err, expErr) {
+			t.Errorf("Precompute: want %v, got %v", expErr, err)
+		}
 	}
 
 	err = filter1.Load()

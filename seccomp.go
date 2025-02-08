@@ -17,8 +17,18 @@ import (
 	"unsafe"
 )
 
-// #include <stdlib.h>
-// #include <seccomp.h>
+/*
+#include <errno.h>
+#include <stdlib.h>
+#include <seccomp.h>
+
+// The following functions were added in libseccomp v2.6.0.
+#if SCMP_VER_MAJOR == 2 && SCMP_VER_MINOR < 6
+int seccomp_precompute(scmp_filter_ctx ctx) {
+	return -EOPNOTSUPP;
+}
+#endif
+*/
 import "C"
 
 // Exported types
@@ -818,6 +828,26 @@ func (f *ScmpFilter) RemoveArch(arch ScmpArch) error {
 	return nil
 }
 
+// Precompute precomputes the seccomp filter for later use by [Load] and
+// similar functions. Not only does this improve performance of [Load],
+// it also ensures that the seccomp filter can be loaded in an
+// async-signal-safe manner if no changes have been made to the filter
+// since it was precomputed.
+func (f *ScmpFilter) Precompute() error {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
+	if !f.valid {
+		return errBadFilter
+	}
+
+	if retCode := C.seccomp_precompute(f.filterCtx); retCode != 0 {
+		return errRc(retCode)
+	}
+
+	return nil
+}
+
 // Load loads a filter context into the kernel.
 // Returns an error if the filter context is invalid or the syscall failed.
 func (f *ScmpFilter) Load() error {
@@ -961,6 +991,25 @@ func (f *ScmpFilter) GetRawRC() (bool, error) {
 	return true, nil
 }
 
+// GetWaitKill returns the current state of WaitKill flag,
+// or an error if an issue was encountered retrieving the value.
+// See SetWaitKill for more details.
+func (f *ScmpFilter) GetWaitKill() (bool, error) {
+	val, err := f.getFilterAttr(filterAttrWaitKill)
+	if err != nil {
+		if e := checkAPI("GetWaitKill", 7, 2, 6, 0); e != nil {
+			err = e
+		}
+
+		return false, err
+	}
+	if val == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 // SetBadArchAction sets the default action taken on a syscall for an
 // architecture not in the filter, or an error if an issue was encountered
 // setting the value.
@@ -1066,6 +1115,25 @@ func (f *ScmpFilter) SetRawRC(state bool) error {
 	err := f.setFilterAttr(filterAttrRawRC, toSet)
 	if err != nil {
 		if e := checkAPI("SetRawRC", 4, 2, 5, 0); e != nil {
+			err = e
+		}
+	}
+
+	return err
+}
+
+// SetWaitKill sets whether libseccomp should request wait killable semantics
+// when possible. Defaults to false.
+func (f *ScmpFilter) SetWaitKill(state bool) error {
+	var toSet C.uint32_t = 0x0
+
+	if state {
+		toSet = 0x1
+	}
+
+	err := f.setFilterAttr(filterAttrWaitKill, toSet)
+	if err != nil {
+		if e := checkAPI("SetWaitKill", 7, 2, 6, 0); e != nil {
 			err = e
 		}
 	}

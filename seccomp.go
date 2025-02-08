@@ -27,6 +27,9 @@ import (
 int seccomp_precompute(scmp_filter_ctx ctx) {
 	return -EOPNOTSUPP;
 }
+int seccomp_export_bpf_mem(const scmp_filter_ctx ctx, void *buf, size_t *len)  {
+	return -EOPNOTSUPP;
+}
 #endif
 */
 import "C"
@@ -1240,6 +1243,30 @@ func (f *ScmpFilter) ExportBPF(file *os.File) error {
 	}
 
 	return nil
+}
+
+// ExportBPFMem is similar to [ExportBPF], except the data is written into
+// a memory and returned as []byte.
+func (f *ScmpFilter) ExportBPFMem() ([]byte, error) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
+	if !f.valid {
+		return nil, errBadFilter
+	}
+
+	var len C.size_t
+	// Get the size required.
+	if retCode := C.seccomp_export_bpf_mem(f.filterCtx, unsafe.Pointer(nil), &len); retCode < 0 {
+		return nil, errRc(retCode)
+	}
+	// Get the data.
+	buf := make([]byte, int(len))
+	if retCode := C.seccomp_export_bpf_mem(f.filterCtx, unsafe.Pointer(&buf[0]), &len); retCode < 0 {
+		return nil, errRc(retCode)
+	}
+
+	return buf, nil
 }
 
 // Userspace Notification API

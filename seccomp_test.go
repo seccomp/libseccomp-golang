@@ -3,7 +3,10 @@
 package seccomp
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -503,6 +506,24 @@ func TestFilterAttributeGettersAndSetters(t *testing.T) {
 	} else if rawrc != true {
 		t.Error("RawRC flag was not set correctly")
 	}
+
+	// Checks that require API level >= 7 and libseccomp >= 2.6.0.
+	if err := checkAPI(t.Name(), 7, 2, 6, 0); err != nil {
+		t.Logf("Skipping the rest of the test: %v", err)
+		return
+	}
+
+	err = filter.SetWaitKill(true)
+	if err != nil {
+		t.Errorf("Error setting WaitKill flag: %v", err)
+	}
+
+	wk, err := filter.GetWaitKill()
+	if err != nil {
+		t.Errorf("Error getting WaitKill flag: %v", err)
+	} else if wk != true {
+		t.Error("WaitKill flag was not set correctly")
+	}
 }
 
 func TestMergeFilters(t *testing.T) {
@@ -583,6 +604,18 @@ func TestRuleAddAndLoad(t *testing.T) {
 }
 
 func subprocessRuleAddAndLoad(t *testing.T) {
+	doSubprocessRuleAddAndLoad(t, false)
+}
+
+func TestRuleAddPrecomputeAndLoad(t *testing.T) {
+	execInSubprocess(t, subprocessRuleAddPrecomputeAndLoad)
+}
+
+func subprocessRuleAddPrecomputeAndLoad(t *testing.T) {
+	doSubprocessRuleAddAndLoad(t, true)
+}
+
+func doSubprocessRuleAddAndLoad(t *testing.T, precompute bool) {
 	// Test #1: Add a trivial filter
 	filter1, err := NewFilter(ActAllow)
 	if err != nil {
@@ -633,6 +666,19 @@ func subprocessRuleAddAndLoad(t *testing.T) {
 	err = filter1.AddRuleConditional(call3, ActErrno.SetReturnCode(0x3), conditions)
 	if err != nil {
 		t.Errorf("Error adding second conditional rule: %s", err)
+	}
+
+	if precompute {
+		expErr := error(nil)
+		// Precompute needs seccomp 2.6.0 and API level 7.
+		if checkAPI(t.Name(), 7, 2, 6, 0) != nil {
+			expErr = syscall.EOPNOTSUPP
+		}
+
+		err = filter1.Precompute()
+		if !errors.Is(err, expErr) {
+			t.Errorf("Precompute: want %v, got %v", expErr, err)
+		}
 	}
 
 	err = filter1.Load()
@@ -726,6 +772,64 @@ func subprocessCreateActKillProcessFilter(t *testing.T) {
 
 	if !filter.IsValid() {
 		t.Errorf("Filter created by NewFilter was not valid")
+	}
+}
+
+func TestExportBPF(t *testing.T) {
+	execInSubprocess(t, subprocessExportBPF)
+}
+
+func subprocessExportBPF(t *testing.T) {
+	filter, err := NewFilter(ActAllow)
+	if err != nil {
+		t.Fatalf("Error creating filter: %s", err)
+	}
+	defer filter.Release()
+
+	call, err := GetSyscallFromName("getpid")
+	if err != nil {
+		t.Fatalf("Error getting syscall number of getpid: %s", err)
+	}
+
+	err = filter.AddRule(call, ActErrno.SetReturnCode(42))
+	if err != nil {
+		t.Fatalf("Error adding rule: %s", err)
+	}
+
+	file, err := os.Create(t.TempDir() + "/bpf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+
+	err = filter.ExportBPF(file)
+	if err != nil {
+		t.Fatalf("ExportBPF: %v", err)
+	}
+
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		t.Fatal(err)
+	}
+	contents, err := io.ReadAll(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("ExportBPF: size %d", len(contents))
+
+	expErr := error(nil)
+	// ExportBPFMem needs seccomp 2.6.0.
+	if checkAPI(t.Name(), 0, 2, 6, 0) != nil {
+		expErr = syscall.EOPNOTSUPP
+	}
+	contentsMem, err := filter.ExportBPFMem()
+	if err != expErr {
+		t.Errorf("ExportBPFMem: want %v, got %v", expErr, err)
+	}
+	if err == nil {
+		t.Logf("ExportBPFMem: size %d", len(contents))
+		if !bytes.Equal(contents, contentsMem) {
+			t.Errorf("Got different data from ExportBPF and ExportBPFMem (%v != %v)", contents, contentsMem)
+		}
 	}
 }
 

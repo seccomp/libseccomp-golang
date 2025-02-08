@@ -3,6 +3,7 @@
 package seccomp
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -601,6 +602,18 @@ func TestRuleAddAndLoad(t *testing.T) {
 }
 
 func subprocessRuleAddAndLoad(t *testing.T) {
+	doSubprocessRuleAddAndLoad(t, false)
+}
+
+func TestRuleAddPrecomputeAndLoad(t *testing.T) {
+	execInSubprocess(t, subprocessRuleAddPrecomputeAndLoad)
+}
+
+func subprocessRuleAddPrecomputeAndLoad(t *testing.T) {
+	doSubprocessRuleAddAndLoad(t, true)
+}
+
+func doSubprocessRuleAddAndLoad(t *testing.T, precompute bool) {
 	// Test #1: Add a trivial filter
 	filter1, err := NewFilter(ActAllow)
 	if err != nil {
@@ -651,6 +664,19 @@ func subprocessRuleAddAndLoad(t *testing.T) {
 	err = filter1.AddRuleConditional(call3, ActErrno.SetReturnCode(0x3), conditions)
 	if err != nil {
 		t.Errorf("Error adding second conditional rule: %s", err)
+	}
+
+	if precompute {
+		expErr := error(nil)
+		// Precompute needs seccomp 2.6.0 and API level 7.
+		if checkAPI(t.Name(), 7, 2, 6, 0) != nil {
+			expErr = syscall.EOPNOTSUPP
+		}
+
+		err = filter1.Precompute()
+		if !errors.Is(err, expErr) {
+			t.Errorf("Precompute: want %v, got %v", expErr, err)
+		}
 	}
 
 	err = filter1.Load()

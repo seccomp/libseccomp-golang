@@ -30,6 +30,13 @@ int seccomp_precompute(scmp_filter_ctx ctx) {
 int seccomp_export_bpf_mem(const scmp_filter_ctx ctx, void *buf, size_t *len)  {
 	return -EOPNOTSUPP;
 }
+int seccomp_transaction_start(const scmp_filter_ctx ctx) {
+	return -EOPNOTSUPP;
+}
+int seccomp_transaction_commit(const scmp_filter_ctx ctx) {
+	return -EOPNOTSUPP;
+}
+void seccomp_transaction_reject(const scmp_filter_ctx ctx) {}
 #endif
 */
 import "C"
@@ -1300,4 +1307,54 @@ func NotifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 // to mitigate time-of-check-time-of-use (TOCTOU) attacks as described in seccomp_notify_id_valid(2).
 func NotifIDValid(fd ScmpFd, id uint64) error {
 	return notifIDValid(fd, id)
+}
+
+// TransactionStart starts a new seccomp filter transaction that the caller can
+// use to perform any number of filter modifications which can then be
+// committed to the filter using [TransactionCommit] or rejected using
+// [TransactionReject]. It is important to note that transactions only affect
+// the seccomp filter state while it is being managed by libseccomp; seccomp
+// filters which have been loaded into the kernel can not be modified, only new
+// seccomp filters can be added on top of the existing loaded filter stack.
+func (f *ScmpFilter) TransactionStart() error {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
+	if !f.valid {
+		return errBadFilter
+	}
+
+	if retCode := C.seccomp_transaction_start(f.filterCtx); retCode < 0 {
+		return errRc(retCode)
+	}
+
+	return nil
+}
+
+// TransactionReject rejects a transaction started by [TransactionStart].
+func (f *ScmpFilter) TransactionReject() {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
+	if !f.valid {
+		return
+	}
+
+	C.seccomp_transaction_reject(f.filterCtx)
+}
+
+// TransactionReject commits a transaction started by [TransactionStart].
+func (f *ScmpFilter) TransactionCommit() error {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
+	if !f.valid {
+		return errBadFilter
+	}
+
+	if retCode := C.seccomp_transaction_commit(f.filterCtx); retCode < 0 {
+		return errRc(retCode)
+	}
+
+	return nil
 }

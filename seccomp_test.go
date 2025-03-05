@@ -1072,3 +1072,61 @@ func subprocessNotifUnsupported(t *testing.T) {
 		t.Error("GetNotifFd: got nil, want error")
 	}
 }
+
+func TestTransaction(t *testing.T) {
+	execInSubprocess(t, testTransaction)
+}
+
+func testTransaction(t *testing.T) {
+	if err := checkAPI("seccomp transaction support", 0, 2, 6, 0); err != nil {
+		t.Skip(err)
+	}
+
+	filter, err := NewFilter(ActAllow)
+	if err != nil {
+		t.Fatalf("Error creating filter: %s", err)
+	}
+	defer filter.Release()
+
+	if err := filter.TransactionStart(); err != nil {
+		t.Fatalf("Error starting transaction: %v", err)
+	}
+	if err := filter.AddRuleExact(ScmpSyscall(0x1), ActKill); err != nil {
+		t.Fatalf("Error adding rule: %v", err)
+	}
+	if err := filter.TransactionCommit(); err != nil {
+		t.Fatalf("Error committing transaction: %v", err)
+	}
+
+	if err := filter.TransactionStart(); err != nil {
+		t.Fatalf("Error starting transaction: %v", err)
+	}
+	if err := filter.AddRuleExact(ScmpSyscall(0x1), ActKill); err != nil {
+		t.Fatalf("Error adding rule: %v", err)
+	}
+	filter.TransactionReject()
+}
+
+func TestTransactionUnsupported(t *testing.T) {
+	execInSubprocess(t, testTransactionUnsupported)
+}
+
+func testTransactionUnsupported(t *testing.T) {
+	if checkAPI("seccomp transaction support", 0, 2, 6, 0) == nil {
+		t.Skip("seccomp transaction is supported")
+	}
+
+	filter, err := NewFilter(ActAllow)
+	if err != nil {
+		t.Fatalf("Error creating filter: %s", err)
+	}
+	defer filter.Release()
+
+	if filter.TransactionStart() == nil {
+		t.Error("TransactionStart: want error, got nil")
+	}
+	if filter.TransactionCommit() == nil {
+		t.Fatalf("TransactionCommit: want error, got nil")
+	}
+	filter.TransactionReject()
+}

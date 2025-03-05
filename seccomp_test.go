@@ -3,8 +3,10 @@
 package seccomp
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -770,6 +772,64 @@ func subprocessCreateActKillProcessFilter(t *testing.T) {
 
 	if !filter.IsValid() {
 		t.Errorf("Filter created by NewFilter was not valid")
+	}
+}
+
+func TestExportBPF(t *testing.T) {
+	execInSubprocess(t, subprocessExportBPF)
+}
+
+func subprocessExportBPF(t *testing.T) {
+	filter, err := NewFilter(ActAllow)
+	if err != nil {
+		t.Fatalf("Error creating filter: %s", err)
+	}
+	defer filter.Release()
+
+	call, err := GetSyscallFromName("getpid")
+	if err != nil {
+		t.Fatalf("Error getting syscall number of getpid: %s", err)
+	}
+
+	err = filter.AddRule(call, ActErrno.SetReturnCode(42))
+	if err != nil {
+		t.Fatalf("Error adding rule: %s", err)
+	}
+
+	file, err := os.Create(t.TempDir() + "/bpf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+
+	err = filter.ExportBPF(file)
+	if err != nil {
+		t.Fatalf("ExportBPF: %v", err)
+	}
+
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		t.Fatal(err)
+	}
+	contents, err := io.ReadAll(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("ExportBPF: size %d", len(contents))
+
+	expErr := error(nil)
+	// ExportBPFMem needs seccomp 2.6.0.
+	if checkAPI(t.Name(), 0, 2, 6, 0) != nil {
+		expErr = syscall.EOPNOTSUPP
+	}
+	contentsMem, err := filter.ExportBPFMem()
+	if err != expErr {
+		t.Errorf("ExportBPFMem: want %v, got %v", expErr, err)
+	}
+	if err == nil {
+		t.Logf("ExportBPFMem: size %d", len(contents))
+		if !bytes.Equal(contents, contentsMem) {
+			t.Errorf("Got different data from ExportBPF and ExportBPFMem (%v != %v)", contents, contentsMem)
+		}
 	}
 }
 

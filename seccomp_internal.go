@@ -818,10 +818,7 @@ func notifReceive(fd ScmpFd) (*ScmpNotifReq, error) {
 	if retCode := C.seccomp_notify_alloc(&req, &resp); retCode != 0 {
 		return nil, errRc(retCode)
 	}
-
-	defer func() {
-		C.seccomp_notify_free(req, resp)
-	}()
+	defer C.seccomp_notify_free(req, resp)
 
 	for {
 		retCode, errno := C.seccomp_notify_receive(C.int(fd), req)
@@ -855,10 +852,7 @@ func notifRespond(fd ScmpFd, scmpResp *ScmpNotifResp) error {
 	if retCode := C.seccomp_notify_alloc(&req, &resp); retCode != 0 {
 		return errRc(retCode)
 	}
-
-	defer func() {
-		C.seccomp_notify_free(req, resp)
-	}()
+	defer C.seccomp_notify_free(req, resp)
 
 	scmpResp.toNative(resp)
 

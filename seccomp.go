@@ -1343,7 +1343,7 @@ func (f *ScmpFilter) TransactionReject() {
 	C.seccomp_transaction_reject(f.filterCtx)
 }
 
-// TransactionReject commits a transaction started by [TransactionStart].
+// TransactionCommit commits a transaction started by [TransactionStart].
 func (f *ScmpFilter) TransactionCommit() error {
 	f.lock.Lock()
 	defer f.lock.Unlock()

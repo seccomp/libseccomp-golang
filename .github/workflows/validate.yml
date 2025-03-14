@@ -33,3 +33,11 @@ jobs:
       run: pip install --break-system-packages codespell==v2.4.1
     - name: run codespell
       run: codespell
+
+  all-done:
+    needs:
+      - lint
+      - codespell
+    runs-on: ubuntu-24.04
+    steps:
+    - run: echo "All jobs completed"

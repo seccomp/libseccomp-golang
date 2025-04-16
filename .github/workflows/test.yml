@@ -80,3 +80,10 @@ jobs:
 
     - name: test
       run: make test
+
+  all-done:
+    needs:
+      - test
+    runs-on: ubuntu-24.04
+    steps:
+    - run: echo "All jobs completed"

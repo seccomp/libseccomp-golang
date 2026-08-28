@@ -9,35 +9,44 @@ on:
   pull_request:
 
 jobs:
-  test:
+  build-libseccomp:
+    # Build every libseccomp version used below, once per architecture, and
+    # share the result as an artifact. Doing this in the test job instead
+    # would mean building the very same library in every matrix cell.
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.19.x, 1.25.x, 1.26.x]
-        libseccomp: ["v2.3.3", "v2.4.4", "v2.5.6", "v2.6.1", "HEAD"]
-        os: [ubuntu-24.04, ubuntu-24.04-arm, ubuntu-26.04, ubuntu-26.04-arm]
+        # v2.3.1 is the minimum version supported by this package. It is only
+        # used by the cross-version job below, not by the test job.
+        libseccomp: ["v2.3.1", "v2.3.3", "v2.4.4", "v2.5.6", "v2.6.1", "HEAD"]
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+        include:
+          - os: ubuntu-24.04
+            arch: amd64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+        exclude:
+          # v2.3.1 is only used by the cross-version job, which is amd64 only.
+          - libseccomp: "v2.3.1"
+            os: ubuntu-24.04-arm
 
     runs-on: ${{ matrix.os }}
 
+    env:
+      # sha256 checksums for libseccomp release tarballs.
+      SHA256_2_3_1: ff5bdd2168790f1979e24eaa498f8606c2f2d96f08a8dc4006a2e88affa4562b
+      SHA256_2_3_3: 7fc28f4294cc72e61c529bedf97e705c3acf9c479a8f1a3028d4cd2ca9f3b155
+      SHA256_2_4_4: 4e79738d1ef3c9b7ca9769f1f8b8d84fc17143c2c1c432e53b9c64787e0ff3eb
+      SHA256_2_5_6: 04c37d72965dce218a0c94519b056e1775cf786b5260ee2b7992956c4ee38633
+      SHA256_2_6_1: 501f66c667225d53791b97e1d7cf85ab764c297d04881f60f38f451c4b0ee1be
+
     steps:
 
-    - name: checkout
-      uses: actions/checkout@v7
-
     - name: build libseccomp ${{ matrix.libseccomp }}
-      env:
-        # sha256 checksums for libseccomp release tarballs.
-        SHA256_2_3_3: 7fc28f4294cc72e61c529bedf97e705c3acf9c479a8f1a3028d4cd2ca9f3b155
-        SHA256_2_4_4: 4e79738d1ef3c9b7ca9769f1f8b8d84fc17143c2c1c432e53b9c64787e0ff3eb
-        SHA256_2_5_6: 04c37d72965dce218a0c94519b056e1775cf786b5260ee2b7992956c4ee38633
-        SHA256_2_6_1: 501f66c667225d53791b97e1d7cf85ab764c297d04881f60f38f451c4b0ee1be
       run: |
         set -x
         sudo apt -qq update
         sudo apt -qq install gperf
-
-        PREFIX="$(pwd)/seccomp"
-        LIBDIR="$PREFIX/lib"
 
         VER="${{ matrix.libseccomp }}"
         if [[ "$VER" == v* ]]; then
@@ -56,7 +65,7 @@ jobs:
           # Any other git tag/branch/sha: clone and build from the repo.
           git clone https://github.com/seccomp/libseccomp
           cd libseccomp
-          git checkout $VER
+          git checkout "$VER"
           # In main branch, configure.ac sets libseccomp version to 0.0.0, which
           # results in error when compiling libseccomp-golang. While 0.0.0 is
           # there for a reason, here we need to build and test against HEAD, so
@@ -66,20 +75,97 @@ jobs:
           #  - version >= current is needed;
           #  - chances are good such version won't ever exist;
           #  - it is easy to spot in tests output;
-          #  - the LIBFILE pattern below expects single digits.
+          #  - the LIBFILE pattern in the test job expects single digits.
           VER=9.9.9
           sed -i "/^AC_INIT(/s/0\.0\.0/$VER/" configure.ac
           ./autogen.sh
         fi
-        ./configure --prefix="$PREFIX" --libdir="$LIBDIR"
-        make
+
+        # Install to a fixed absolute location, since libseccomp.pc records
+        # it, and the jobs below unpack this to the very same place.
+        PREFIX="/opt/seccomp/$VER"
+        ./configure --prefix="$PREFIX" --libdir="$PREFIX/lib"
+        make -j"$(nproc)"
         sudo make install
         cd -
-        rm -rf libseccomp
 
-        # For the next steps to build and execute with the compiled library.
-        echo "PKG_CONFIG_LIBDIR=$LIBDIR/pkgconfig" >> $GITHUB_ENV
-        LIBFILE="$(echo $LIBDIR/libseccomp.so.?.?.?)"
+        # Pack it up, rather than uploading the tree as is, since GitHub
+        # artifacts preserve neither symlinks nor file modes.
+        tar -cf "seccomp-$VER.tar" -C / "opt/seccomp/$VER"
+
+    - name: upload libseccomp ${{ matrix.libseccomp }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: seccomp-${{ matrix.libseccomp }}-${{ matrix.arch }}
+        path: seccomp-*.tar
+        retention-days: 1
+
+
+  test:
+    needs: build-libseccomp
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every libseccomp version on every runner, with the latest Go.
+        go-version: [1.26.x]
+        libseccomp: ["v2.3.3", "v2.4.4", "v2.5.6", "v2.6.1", "HEAD"]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, ubuntu-26.04, ubuntu-26.04-arm]
+        include:
+          # Which of the artifacts built above to use.
+          - os: ubuntu-24.04
+            arch: amd64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: ubuntu-26.04
+            arch: amd64
+          - os: ubuntu-26.04-arm
+            arch: arm64
+          # The Go version does not interact with the libseccomp version, so
+          # the other supported Go versions get a cell each, rather than a
+          # full sweep. 1.19 is the minimum one (see go.mod).
+          #
+          # Unlike the entries above, these create new combinations rather
+          # than adding to the existing ones, so they have to spell out arch
+          # as well (an include entry is not applied to a combination another
+          # include entry has created).
+          - go-version: 1.19.x
+            libseccomp: "v2.6.1"
+            os: ubuntu-24.04
+            arch: amd64
+          - go-version: 1.25.x
+            libseccomp: "v2.6.1"
+            os: ubuntu-24.04
+            arch: amd64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v7
+
+    - name: download libseccomp ${{ matrix.libseccomp }}
+      uses: actions/download-artifact@v8
+      with:
+        name: seccomp-${{ matrix.libseccomp }}-${{ matrix.arch }}
+
+    - name: install libseccomp ${{ matrix.libseccomp }}
+      run: |
+        set -x
+        sudo tar -C / -xf seccomp-*.tar
+        rm -f seccomp-*.tar
+
+        # The tarball unpacks into /opt/seccomp/<version>; for HEAD, that is
+        # the stand-in version it was built as.
+        set -- /opt/seccomp/*
+        [ $# -eq 1 ] || { echo "Error: expected a single version, got: $*"; exit 1; }
+        PREFIX="$1"
+        VER="${PREFIX##*/}"
+
+        # For the next steps to build and execute with this library.
+        echo "PKG_CONFIG_LIBDIR=$PREFIX/lib/pkgconfig" >> $GITHUB_ENV
+        LIBFILE="$(echo $PREFIX/lib/libseccomp.so.?.?.?)"
         echo "LD_PRELOAD=$LIBFILE" >> $GITHUB_ENV
         # For TestExpectedSeccompVersion.
         echo "_EXPECTED_LIBSECCOMP_VERSION=$VER" >> $GITHUB_ENV
@@ -88,22 +174,149 @@ jobs:
       uses: actions/setup-go@v7
       with:
         go-version: ${{ matrix.go-version }}
-        # Add libseccomp.pc path so that setup-go adds this file hash to cache key.
-        # This way, we'll have different caches for different libseccomp versions.
-        cache-dependency-path: |
-          go.sum
-          ${{ env.PKG_CONFIG_LIBDIR }}/libseccomp.pc
+        # Caching doesn't really work across multiple libseccomp versions
+        # (see the cross-version job below), so don't bother.
+        cache: false
 
 
     - name: build
       run: make build
 
+    - name: check symbols
+      run: make check-symbols
+
     - name: test
       run: make test
+
+    - name: test against system libseccomp
+      # Run the test binary built above against the distro-provided
+      # libseccomp, which is a different version than the one it was compiled
+      # against. This is exactly the scenario the weak references and the
+      # compile-time/run-time version checks are there for.
+      #
+      # Not done for HEAD, which is built as version 9.9.9, and so needs
+      # libseccomp.so.9, which no distro provides.
+      if: matrix.libseccomp != 'HEAD'
+      run: |
+        set -x
+        # Use distro-provided libseccomp.so.
+        unset LD_PRELOAD
+
+        # Make sure it is indeed the distro-provided library, rather than the
+        # one installed above (which lives under /opt/seccomp).
+        LIB="$(ldd ./libseccomp-golang.test | awk '/libseccomp\.so\.2 /{print $3}')"
+        LIB="$(readlink -f "$LIB")"
+        case "$LIB" in
+        /opt/seccomp/*) echo "Error: not a system libseccomp: $LIB"; exit 1;;
+        esac
+
+        # The version reported by the package is the lower of the compile-time
+        # and the run-time ones, which is what TestExpectedSeccompVersion has
+        # to expect here.
+        SYS_VER="${LIB##*/libseccomp.so.}"
+        case "$SYS_VER" in
+        [0-9]*.[0-9]*.[0-9]*) ;;
+        *) echo "Error: can not tell the version of $LIB"; exit 1;;
+        esac
+        _EXPECTED_LIBSECCOMP_VERSION="$(printf '%s\n%s\n' \
+                "$_EXPECTED_LIBSECCOMP_VERSION" "$SYS_VER" | sort -V | head -1)"
+        export _EXPECTED_LIBSECCOMP_VERSION
+
+        # Run the pre-built test.
+        make test-run
+
+
+  cross-version:
+    # Check that a test binary built against one libseccomp version works when
+    # used with another one, in both directions. In particular, this guards
+    # against a binary built against a newer libseccomp not even being able to
+    # start with an older one (see seccomp_compat.h for how that is avoided).
+    needs: build-libseccomp
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # The version to compile against. The resulting test binary is then
+        # run against every version built above.
+        libseccomp: ["v2.3.1", "v2.3.3", "v2.4.4", "v2.5.6", "v2.6.1"]
+
+    runs-on: ubuntu-24.04
+
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v7
+
+    - name: download libseccomp builds
+      uses: actions/download-artifact@v8
+      with:
+        # Releases only: HEAD is built as 9.9.9, so it provides
+        # libseccomp.so.9, which none of these binaries ask for.
+        pattern: seccomp-v*-amd64
+        merge-multiple: true
+        path: seccomp-tars
+
+    - name: install libseccomp builds
+      run: |
+        set -x
+        for tar in seccomp-tars/*.tar; do
+          sudo tar -C / -xf "$tar"
+        done
+        rm -rf seccomp-tars
+        ls -d /opt/seccomp/*
+
+    - name: install go
+      uses: actions/setup-go@v7
+      with:
+        go-version: 1.26.x
+        # Caching doesn't really work across multiple libseccomp versions
+        # (same as the test job above), so don't bother.
+        cache: false
+
+    - name: build test binary against libseccomp ${{ matrix.libseccomp }}
+      env:
+        COMPILE_VER: ${{ matrix.libseccomp }}
+      run: |
+        set -x
+        export PKG_CONFIG_LIBDIR="/opt/seccomp/${COMPILE_VER#v}/lib/pkgconfig"
+        pkg-config --modversion libseccomp
+        make test-build
+        make check-symbols
+
+    - name: run it against every libseccomp version
+      env:
+        COMPILE_VER: ${{ matrix.libseccomp }}
+      run: |
+        compile="${COMPILE_VER#v}"
+        rc=0
+        for dir in /opt/seccomp/*; do
+          run="${dir##*/}"
+          # The package reports the lower of the compile-time and the run-time
+          # version (see getMinVersion), which is what the tests expect.
+          expected="$(printf '%s\n%s\n' "$compile" "$run" | sort -V | head -1)"
+          echo "::group::compile-time $compile, run-time $run (expecting $expected)"
+          # Use LD_LIBRARY_PATH rather than LD_PRELOAD, so that the version
+          # being tested is the only libseccomp that can be loaded at all.
+          export LD_LIBRARY_PATH="$dir/lib"
+          # Make sure the above actually took effect.
+          ldd ./libseccomp-golang.test | grep -F "=> $dir/lib/libseccomp.so.2" || {
+            echo "Error: libseccomp.so.2 does not resolve to $dir/lib"
+            ldd ./libseccomp-golang.test
+            exit 1
+          }
+          # Make the dynamic linker resolve all the symbols upfront, rather
+          # than on first use, so that a missing one fails here, rather than
+          # only for those users who call the affected functionality.
+          LD_BIND_NOW=1 _EXPECTED_LIBSECCOMP_VERSION="$expected" make test-run || rc=1
+          echo "::endgroup::"
+        done
+        exit $rc
+
 
   all-done:
     needs:
       - test
+      - cross-version
     runs-on: ubuntu-24.04
     steps:
     - run: echo "All jobs completed"

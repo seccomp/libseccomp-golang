@@ -36,14 +36,6 @@ type VersionError struct {
 	curAPI, minAPI      uint   // current and minimally required API versions
 }
 
-func init() {
-	// This forces the cgo libseccomp to initialize its internal API support state,
-	// which is necessary on older versions of libseccomp (< 2.5.0) in order to work
-	// correctly.
-	// TODO: remove once libseccomp < v2.5.0 is not supported.
-	_, _ = getAPI()
-}
-
 func (e VersionError) Error() string {
 	if e.minAPI != 0 {
 		return fmt.Sprintf("%s requires libseccomp >= %d.%d.%d and API level >= %d "+
@@ -634,6 +626,14 @@ func NewFilter(defaultAction ScmpAction) (*ScmpFilter, error) {
 
 	if err := sanitizeAction(defaultAction); err != nil {
 		return nil, err
+	}
+
+	// Before v2.5.0, seccomp_init does not initialize libseccomp internal
+	// API support state, which is needed for some functionality (such as
+	// TSYNC, set below) to work correctly. Force it via seccomp_api_get.
+	// TODO: remove once libseccomp < v2.5.0 is not supported.
+	if !versionGE(verMajor, verMinor, verMicro, 2, 5, 0) {
+		_, _ = getAPI()
 	}
 
 	fPtr := C.seccomp_init(defaultAction.toNative())

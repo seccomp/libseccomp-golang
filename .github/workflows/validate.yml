@@ -22,8 +22,6 @@ jobs:
           sudo apt -q update
           sudo apt -q install libseccomp-dev
       - uses: golangci/golangci-lint-action@v9
-        with:
-          version: v2.12
 
   codespell:
     runs-on: ubuntu-24.04

@@ -240,7 +240,10 @@ const (
 	// CompareLessOrEqual returns true if the argument is less than or equal
 	// to the given value
 	CompareLessOrEqual
-	// CompareEqual returns true if the argument is equal to the given value
+	// CompareEqual returns true if the argument is equal to the given value.
+	// Note that the comparison is done on the full 64-bit argument, while
+	// the kernel ignores the upper 32 bits of 32-bit arguments; see
+	// [MakeCondition] and https://github.com/seccomp/libseccomp/pull/504.
 	CompareEqual
 	// CompareGreaterEqual returns true if the argument is greater than or
 	// equal to the given value
@@ -563,11 +566,23 @@ func GetSyscallFromNameByArch(name string, arch ScmpArch) (ScmpSyscall, error) {
 // The rule will match if argument $arg (zero-indexed) of the syscall is
 // $COMPARE_OP the provided comparison value.
 // Some comparison operators accept two values. Masked equals, for example,
-// will mask $arg of the syscall with the second value provided (via bitwise
-// AND) and then compare against the first value provided.
+// will mask $arg of the syscall with the first value provided (via bitwise
+// AND) and then compare against the second value provided.
 // For example, in the less than or equal case, if the syscall argument was
 // 0 and the value provided was 1, the condition would match, as 0 is less
 // than or equal to 1.
+//
+// Note that the comparison is done against the full 64-bit syscall argument.
+// Many syscall arguments are 32-bit types (for example, the domain argument of
+// socket(2)) for which the kernel ignores the upper 32 bits, but a caller can
+// set them to arbitrary values. A condition such as
+// MakeCondition(0, CompareEqual, unix.AF_NETLINK) will not match a call to
+// socket(2) with domain 0x100000000|AF_NETLINK, which the kernel treats the
+// same as AF_NETLINK, so a rule relying on it can be bypassed. For such
+// arguments use [CompareMaskedEqual] with a mask of 0xffffffff instead, for
+// example MakeCondition(0, CompareMaskedEqual, 0xffffffff, unix.AF_NETLINK).
+// See also https://github.com/seccomp/libseccomp/pull/504.
+//
 // Return either an error on bad argument or a valid ScmpCondition struct.
 func MakeCondition(arg uint, comparison ScmpCompareOp, values ...uint64) (ScmpCondition, error) {
 	var condStruct ScmpCondition
